@@ -53,7 +53,7 @@ dist <- numeric(length(latitude))
 for(i in 1:length(latitude)){
   dist[i] <- distHaversine(location[i,],pi)
 }
-beep(3)
+#beep(3)
 
 #We add a column for dist (in km) in the AirBNB dataframe:
 AirBNB <- cbind(AirBNB,dist/1000) #NOTE: Unit of dist is km.
@@ -66,7 +66,7 @@ attach(AirBNB)
 r_type<-factor(room_type) #"Entire home/apt" is baseline.
 hood <- factor(neighbourhood_group) 
 
-#---------------------Fit model------------------------------------------------#
+  #---------------------Fit model------------------------------------------------#
 #Here we fit the first multivariate model. It contains two continuous covariates
 #(dist and number of reviews), and one categorical (roomtype, baseline 
 #"Entire home/apt"). The logarithmic transformation of the response variabel
@@ -146,7 +146,7 @@ for (jj in (1:dim(cleaps$which)[1])) {
 }
 pmses
 
-windows()
+grDevices::windows()
 plot(realdimension,pmses) # plot: model's pmses vs real dimensions 
 
 pmses
@@ -167,7 +167,7 @@ designchosen <- cbind(rep(1,dim(xxt)[1]),designchosen)
 ypred <- designchosen%*%betachosen  # covariates test set to get predictions
 
 #plot
-windows()
+grDevices::windows()
 plot(yyt,ypred)  # plot: predict vs test observations
 abline(0,1)  
 
@@ -181,7 +181,7 @@ modols<-lm(log(price)~AirBNB$dist+r_type+number_of_reviews,data=AirBNB)
 out<-ols_step_all_possible(modols) #regression of all subsets.
 
 
-
+grDevices::windows()
 plot(out) #Decide model after Mallow's Cp.
 #Look in out for the best model:
 out
@@ -255,7 +255,7 @@ pmses
 realdimension
 
 #Find best model with pmse
-windows()
+grDevices::windows()
 plot(realdimension,
      pmses,
      main = "Prediction MSE",
@@ -279,7 +279,7 @@ designchosen <- xxt[,cleaps$which[1,-1]==T]
 designchosen <- cbind(rep(1,dim(xxt)[1]),designchosen)
 ypred <- designchosen%*%betachosen  
 
-windows()
+grDevices::windows()
 plot(yyt,ypred) 
 abline(0,1)   
 
@@ -296,7 +296,7 @@ red_interactions <- lm(log(price)~dist+r_type)
 summary(full_interactions)
 
 
-windows()
+grDevices::windows()
 plot(room_type,log(price))
 
 
@@ -378,7 +378,7 @@ for (jj in (1:dim(cleaps$which)[1])) {
 pmses
 realdimension
 
-windows()
+grDevices::windows()
 plot(realdimension,pmses) #Compare models by pMSE
 
 pmses
@@ -398,7 +398,7 @@ designchosen <- xxt[,cleaps$which[3,-1]==T]
 designchosen <- cbind(rep(1,dim(xxt)[1]),designchosen)
 ypred <- designchosen%*%betachosen  
 
-windows()
+grDevices::windows()
 plot(yyt,
      ypred,
      main = "Test data analysis: y_pred vs y_test",
