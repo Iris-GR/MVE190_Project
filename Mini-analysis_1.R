@@ -1,4 +1,4 @@
-# Mini-analysis 1
+# Mini-analysis 1 
 
 # Set the working directory
 setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
