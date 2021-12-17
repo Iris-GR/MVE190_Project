@@ -1,4 +1,7 @@
 setwd("~/Linear statistical models/mini-presentations/presentation_3")
+
+#------------------ Libraries -------------------------------------------------#
+#Here are all the libraries used (or potentially not used) presented.
 library(vioplot)
 library(geosphere)
 library(dplyr)
@@ -6,64 +9,85 @@ library(ISLR)
 library(leaps)
 library(olsrr)
 library(ggplot2)
-library(rgl)  # load the package
-library(scatterplot3d)  # load the package
-# some nice graphics to compare the coefficients magnitude
+library(rgl)  
+library(scatterplot3d)  
 library(arm)
-
-# or similarly using dwplot, but I think this is a little buggy at times...
 library(dotwhisker)
 library(beepr)
-#-----------------------------Loading data and modifying it-----------------------------#
+#--------------------Loading data and modifying it-----------------------------#
+#Load the data used in the project:
 AirBNB <- read.csv("AirBnB_NYCity_2019.csv")
 AirBNB <- data.frame(AirBNB)
+
+#We remove price = 0 to avoid error with the logarithm (and because they are 
+# weird):
 AirBNB <- subset(AirBNB, price > 0)
 
-#Remove useless variables:
-AirBNB <- subset(AirBNB,select=-c(id,host_id,name,host_name,
-                                  last_review,reviews_per_month,calculated_host_listings_count,
-                                  availability_365))
-
-length(AirBNB$number_of_reviews)
-
+#We also remove useless variables:
+AirBNB <- subset(AirBNB,select=-c(
+  id,
+  host_id,
+  name,
+  host_name,
+  last_review,
+  reviews_per_month,
+  calculated_host_listings_count,
+  availability_365
+))
 
 #-----------------Distances----------------------------------------------------#
-#Coorditas for rich neighbourhood:
+#In this section, the distance covariate is calculated. It is still the distance
+# to TriBeCa we are looking at.
+
+
+#Coordinates for TriBeCa (a rich neighbourhood located in Manhattan):
 pi <- c(-74.007819,40.718266)
 
 #Make vector with latitude and longitude coordinates for each ABNB:
 location <- cbind(longitude,latitude)
 
-
+#Initialise dist as a vector with length latitute.
 dist <- numeric(length(latitude))
+
 #Make vector with distances to rich neighbourhood:
 for(i in 1:length(latitude)){
   dist[i] <- distHaversine(location[i,],pi)
 }
 beep(3)
-#Add column for dist:
-AirBNB <- cbind(AirBNB,dist/1000)
 
-attach(AirBNB)
-#--------------------Room type and Neighbourhood--------------------------------------#
+#We add a column for dist (in km) in the AirBNB dataframe:
+AirBNB <- cbind(AirBNB,dist/1000) #NOTE: Unit of dist is km.
 
-r_type<-factor(room_type)
-hood <- factor(neighbourhood_group)
+attach(AirBNB) 
+#--------------------Room type and Neighbourhood-------------------------------#
+#Here we handle the categorial covariates roomtype and neighbourhood group.
+#That is, we factorise them inte different levels with the function factor:
 
-#------------------------------------------------------------------------------#
+r_type<-factor(room_type) #"Entire home/apt" is baseline.
+hood <- factor(neighbourhood_group) 
+
+#---------------------Fit model------------------------------------------------#
+#Here we fit the first multivariate model. It contains two continuous covariates
+#(dist and number of reviews), and one categorical (roomtype, baseline 
+#"Entire home/apt"). The logarithmic transformation of the response variabel
+#is also used.
 
 mod1<-lm(log(price)~dist+r_type+number_of_reviews,x=TRUE)
 summary(mod1)
 
-#:::::::::::: WE START WITH THE REGSUBSETS FUNCTION FROM THE LEAPS PACKAGE :::::::::::::::::::::::::::
-#:::::::::::: (THE ATTEMPT WITH THE OLSRR PACKAGE IS FURTHER BELOW) ::::::::::::::::::::::::::::::::::
+#----------------- test and training data to see predictability ---------------#
+#Here, the regsubset function is used to test the predictability/robustness
+#of the model. The dataset is divided into 70% training data and 30% test data.
+#Parameters are fitted to the training data, and the test data observations
+#are then plotted against the model with parameters fitted to the training
+#data, with test data covariates, to see if there are large discrepancies.
 
-X <- mod1$x  # extract the design matrix
-X <- X[,-c(1)] # remove the intercept
+X <- mod1$x  #The design matrix is extracted
+X <- X[,-c(1)] #The intercept is removed
 
-# form training and test data
+#Training and test data is formed
 set.seed(123)
-frac <- 0.7 # training is 70% the whole dataset
+frac <- 0.7 #Training = 70% whole dataset
 trainindeces <- sample(seq(1,dim(X)[1]),round(dim(X)[1]*frac))
 
 
@@ -78,13 +102,14 @@ yyt <- log(price[-trainindeces])
 
 
 
-# columns 2 and 3 in xx are levels of categorical covariate. Let's force it in each model to fit
+#Note that here, in xx, the columns 2 and 3 are levels of the categorical 
+#covariate. We therefore force these levels into each model to fit:
 mod1 <-
   regsubsets(
     xx,
     yy,
     int = T,
-    nbest = 1000,
+    nbest = 1000, 
     nvmax = dim(X)[2],
     method = c("ex"),
     really.big = T,
@@ -93,109 +118,104 @@ mod1 <-
 cleaps<-summary(mod1,matrix=T)
 cleaps$which
 
-# notice regsubsets is not really optimized to work with categorical covariates. 
+#However, regsubsets is not suited for categorical covariates. Hence,
+#a vector of realdimensions for the ACTUAL complexity of the models are 
+#created:
+realdimension <- c(rep(2,2),3)  # There are 2 models with real dimension 2
 
-# so just for your illustration, I create a vector realdimensions for the actual complexity of the several models
-realdimension <- c(rep(2,2),3)  # we have 2 models with real dimension 2
-
-# also, notice that when we use force.in then regsubsets rearranges the order of covariates so that the categorical
-# dummy variables appear first. WE MUST TAKE THIS INTO ACCOUNT! SO here is another hack:
-# we reorder the columns of xx and xxt according to the order found in cleaps$which
+#When force.in is used, the order of covariates is rearranged by regsubsets 
+#Hence, the categorical dummy variables will be first. 
+#This needs to be taken into account, hence:
+#reorder columns of xx and xxt by the order in cleaps$which
 col.order <- c(colnames(cleaps$which))
-xx <- xx[,col.order[-1]]   # now the order of columns in xx is consistent with the order in cleaps$which
-xxt <- xxt[,col.order[-1]] # now the order of columns in xxt is consistent with the order in cleaps$which
+xx <- xx[,col.order[-1]]   # order columns xx = order cleaps$which
+xxt <- xxt[,col.order[-1]] # order columns xxt = order cleaps$which
 
 pmses<-rep(0,dim(cleaps$which)[1])
 for (jj in (1:dim(cleaps$which)[1])) {
-  # here we fit training data
+  #training data is fit 
   mmr<-lm(yy~xx[,cleaps$which[jj,-1]==T])
-  # (i) obtain the design matrix for the given model
-  # by selecting "active variables" in TEST data
+  #Select "active variables" TEST data to
+  #get the given model's design matrix
   design <- xxt[,cleaps$which[jj,-1]==T]
-  # (ii) add a column of ones for the intercept
+  #include column with ones (intercept)
   design <- cbind(rep(1,dim(xxt)[1]),design)
-  PEcp<-sum((yyt-design%*%mmr$coef)^2)/length(yyt)
-  # the above is the pMSE for the current model.
-  # let's store it in a vector
+  PEcp<-sum((yyt-design%*%mmr$coef)^2)/length(yyt) #pMSE current model
+  #store pMSE in vector:
   pmses[jj]<-PEcp
 }
 pmses
 
 windows()
-plot(realdimension,pmses) # plot the pmses vs the real dimensions of the models
+plot(realdimension,pmses) # plot: model's pmses vs real dimensions 
 
 pmses
-# so a quite good model seem to have realdimension == 2. Let's find the smallest pmse for a model with dimension 3 
+#realdimension == 2. 
+#find smallest pmse for mod with dim == 2
 pmses[realdimension==2]
-# this has to be the one with "origin" (obviously), "horsepower" and "weight" which has 14.622 (this is model #6)
 
 cleaps$which[1,]  # having pmse = 0.272191
 
 
-# Now let's compare predictions using such model with the observed data from the test set
-chosenmod <- lm(yy~xx[,cleaps$which[1,-1]==T])  # fit the training data with our favorite model  (model #6)
-betachosen <- chosenmod$coefficients  # parameter estimates from our favorite model on training data
-# select "active variables" in TEST data, corresponding to model #6 
+#compare observed data in test set with predictions from our model
+chosenmod <- lm(yy~xx[,cleaps$which[1,-1]==T])  #fit chosen model with training data 
+betachosen <- chosenmod$coefficients  # parameter estimates 
+#Take TEST data "active variables"  
 designchosen <- xxt[,cleaps$which[1,-1]==T]
-#add a column of ones for the intercept
+#+ column for ones
 designchosen <- cbind(rep(1,dim(xxt)[1]),designchosen)
-ypred <- designchosen%*%betachosen  # obtain predictions using the covariates from the test set
+ypred <- designchosen%*%betachosen  # covariates test set to get predictions
 
+#plot
 windows()
-plot(yyt,ypred)  # compare predictions with test responses
-abline(0,1)   # not bad!
+plot(yyt,ypred)  # plot: predict vs test observations
+abline(0,1)  
 
 
-#:::::::::::::::: WE NOW TRY THE OLSRR PACKAGE :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-# notice, unfortunately it does not seem possible to set the size of the data used for training and testing.
-# IN fact I DO NOT THINK THE DATASET IS EVER SPLIT INTO TRAINING AND TEST DATA
-# this is however ok, as the measures considered by the package (AIC, Cp etc) can be defined without need training and test data.
-# But this also mean that we are not going to select a model based on out-of-sample prediction
-
+#-------------- OLS package ---------------------------------------------------#
+#CON: Cannot set size for training and test data - not even split...
+#Instead, package contains other measures (AIC, Cp, etc).
+#Hence, do not get model through out-of-sample pred
 
 modols<-lm(log(price)~AirBNB$dist+r_type+number_of_reviews,data=AirBNB)
-out<-ols_step_all_possible(modols) # all subsets regressions!
-
-?ols_step_all_possible()
+out<-ols_step_all_possible(modols) #regression of all subsets.
 
 
-plot(out)  # from the Mallow's Cp it seems a model with size 3 is good, and the plot shows that model #22 is good.
-# Let's go find such a model
+
+plot(out) #Decide model after Mallow's Cp.
+#Look in out for the best model:
 out
-# So we first look at the value of N, for N=3. There we see that Index=22 for N=3 corresponds to a model having Mallow's Cp = 2.16.
-# This is the model with "origin", "horsepower" and "weight".
-# We selected the same model as with regsubsets however I believe this is not necessarily to be expected.
-# With regsubsets we had to force in the categorical covariate, but olsrr also allows for models without the origin covariate.
-# This looks really nice and practical!
 
 #------------------------------------------------------------------------------#
+#Here the same procedure is done again for new model. Here, covariates are
+#roomtype, dist, number of reviews, and minimum nights (1 cat, 3 cont).
+#The procedure is otherwise the same as before, completely.
 
 truemod<-lm(log(price)~r_type+dist+number_of_reviews+minimum_nights,x=TRUE)
 summary(truemod)
 
-X1 <- truemod$x  # extract the design matrix
-X1 <- X1[,-c(1)] # remove the intercept
+#Design matrix
+X1 <- truemod$x  
+X1 <- X1[,-c(1)] 
 
-# form training and test data
+#70% training/30% test
 set.seed(123)
-frac <- 0.7 # training is 70% the whole dataset
+frac <- 0.7
 trainindeces <- sample(seq(1,dim(X1)[1]),round(dim(X1)[1]*frac))
 
-
-#Training data
 xx <- as.matrix(X1[trainindeces,]) 
 yy <- log(price[trainindeces])
 
 
-#Test data
+
 xxt <- as.matrix(X1[-trainindeces,])
 yyt <- log(price[-trainindeces])
 
 head(xx)
 dim(xx)
 xx
-# columns 2 and 3 in xx are levels of categorical covariate. Let's force it in each model to fit
+
+#Force in cat levels
 truemod <-
   regsubsets(
     xx,
@@ -210,71 +230,72 @@ truemod <-
 cleaps<-summary(truemod,matrix=T)
 cleaps$which
 
-# notice regsubsets is not really optimized to work with categorical covariates. 
-
-# so just for your illustration, I create a vector realdimensions for the actual complexity of the several models
-realdimension <- c(rep(2,3),rep(3,3),4)  # we have 2 models with real dimension 2
+#Real dim
+realdimension <- c(rep(2,3),rep(3,3),4) 
 
 
-# also, notice that when we use force.in then regsubsets rearranges the order of covariates so that the categorical
-# dummy variables appear first. WE MUST TAKE THIS INTO ACCOUNT! SO here is another hack:
-# we reorder the columns of xx and xxt according to the order found in cleaps$which
+#Order after cleaps$which
 col.order <- c(colnames(cleaps$which))
-xx <- xx[,col.order[-1]]   # now the order of columns in xx is consistent with the order in cleaps$which
-xxt <- xxt[,col.order[-1]] # now the order of columns in xxt is consistent with the order in cleaps$which
+xx <- xx[,col.order[-1]]   
+xxt <- xxt[,col.order[-1]] 
 
 pmses<-rep(0,dim(cleaps$which)[1])
 for (jj in (1:dim(cleaps$which)[1])) {
-  # here we fit training data
+  
   mmr<-lm(yy~xx[,cleaps$which[jj,-1]==T])
-  # (i) obtain the design matrix for the given model
-  # by selecting "active variables" in TEST data
+ 
   design <- xxt[,cleaps$which[jj,-1]==T]
-  # (ii) add a column of ones for the intercept
+  
   design <- cbind(rep(1,dim(xxt)[1]),design)
   PEcp<-sum((yyt-design%*%mmr$coef)^2)/length(yyt)
-  # the above is the pMSE for the current model.
-  # let's store it in a vector
+
   pmses[jj]<-PEcp
 }
 pmses
 realdimension
 
+#Find best model with pmse
 windows()
-plot(realdimension,pmses, main="Prediction MSE", xlab="Number of covariates", ylab="pMSE") # plot the pmses vs the real dimensions of the models
+plot(realdimension,
+     pmses,
+     main = "Prediction MSE",
+     xlab = "Number of covariates",
+     ylab = "pMSE")
 
 pmses
-# so a quite good model seem to have realdimension == 2. Let's find the smallest pmse for a model with dimension 3 
+
 pmses[realdimension==2]
-# this has to be the one with "origin" (obviously), "horsepower" and "weight" which has 14.622 (this is model #6)
 
 cleaps$which
 
-cleaps$which[1,]  # having pmse = 0.272191
+cleaps$which[1,]
 
 
-# Now let's compare predictions using such model with the observed data from the test set
-chosenmod <- lm(yy~xx[,cleaps$which[1,-1]==T])  # fit the training data with our favorite model  (model #6)
-betachosen <- chosenmod$coefficients  # parameter estimates from our favorite model on training data
-# select "active variables" in TEST data, corresponding to model #6 
+#Compare test vs predicted
+chosenmod <- lm(yy~xx[,cleaps$which[1,-1]==T]) 
+betachosen <- chosenmod$coefficients 
+
 designchosen <- xxt[,cleaps$which[1,-1]==T]
-#add a column of ones for the intercept
+
 designchosen <- cbind(rep(1,dim(xxt)[1]),designchosen)
-ypred <- designchosen%*%betachosen  # obtain predictions using the covariates from the test set
+ypred <- designchosen%*%betachosen  
 
 windows()
-plot(yyt,ypred)  # compare predictions with test responses
-abline(0,1)   # not bad!
+plot(yyt,ypred) 
+abline(0,1)   
 
 #---------------------------------- Interactions ------------------------------#
+#Here we also take into account interactions between the covariates. We look 
+#here at interaction between roomtype and distance. 
 
 full_interactions<-lm(log(price)~dist+r_type+dist:r_type,x=TRUE)
 summary(full_interactions)
 
+#To see if interactions are needed, we do a partial F test, where
+#the full model contains the interaction term, and the reduced does not.
 red_interactions <- lm(log(price)~dist+r_type)
 summary(full_interactions)
 
-length(price)
 
 windows()
 plot(room_type,log(price))
@@ -282,37 +303,42 @@ plot(room_type,log(price))
 
 plot3d(dist,r_type,log(price))
 
+#Anova is used for this partial F test (it works because the models
+# are nested). H0 is that the reduced model will not increase SSerror enough
+#for it to be problematic (so H0 = reduced model ok)
 anova(red_interactions,full_interactions)
 qf(1-0.05,1,length(price)-4)
+#Fobs>Fstat -> reject H0 and continue on with full model.
 
-#----------------------------------Interactions pred-----------------------------------------#
+#----------------------------------Interactions pred---------------------------#
+#Here we use our full model for the prediction.
 
 truemod1<-lm(log(price)~r_type+dist+dist:r_type,x=TRUE)
 summary(truemod1)
 
+#Design matrix
+X1 <- truemod1$x  
+X1 <- X1[,-c(1)] 
 
-X1 <- truemod1$x  # extract the design matrix
-X1 <- X1[,-c(1)] # remove the intercept
-
-# form training and test data
+#Training and test data
 set.seed(123)
-frac <- 0.7 # training is 70% the whole dataset
+frac <- 0.7 
 trainindeces <- sample(seq(1,dim(X1)[1]),round(dim(X1)[1]*frac))
 
 
-#Training data
+
 xx <- as.matrix(X1[trainindeces,]) 
 yy <- log(price[trainindeces])
 
 
-#Test data
+
 xxt <- as.matrix(X1[-trainindeces,])
 yyt <- log(price[-trainindeces])
 
 head(xx)
 dim(xx)
 
-# columns 2 and 3 in xx are levels of categorical covariate. Let's force it in each model to fit
+#Force in
 truemod <-
   regsubsets(
     xx,
@@ -329,61 +355,54 @@ summary(truemod)
 cleaps<-summary(truemod,matrix=T)
 cleaps$which
 
-# notice regsubsets is not really optimized to work with categorical covariates. 
+#Real dim
+realdimension <- c(rep(2,2),3)  
 
-# so just for your illustration, I create a vector realdimensions for the actual complexity of the several models
-realdimension <- c(rep(2,2),3)  # we have 2 models with real dimension 2
-
-# also, notice that when we use force.in then regsubsets rearranges the order of covariates so that the categorical
-# dummy variables appear first. WE MUST TAKE THIS INTO ACCOUNT! SO here is another hack:
-# we reorder the columns of xx and xxt according to the order found in cleaps$which
+#Order:
 col.order <- c(colnames(cleaps$which))
-xx <- xx[,col.order[-1]]   # now the order of columns in xx is consistent with the order in cleaps$which
-xxt <- xxt[,col.order[-1]] # now the order of columns in xxt is consistent with the order in cleaps$which
+xx <- xx[,col.order[-1]] 
+xxt <- xxt[,col.order[-1]] 
 
-head(xx)
-
-
-
+#pMSE calc
 pmses<-rep(0,dim(cleaps$which)[1])
 for (jj in (1:dim(cleaps$which)[1])) {
-  # here we fit training data
+  
   mmr<-lm(yy~xx[,cleaps$which[jj,-1]==T])
-  # (i) obtain the design matrix for the given model
-  # by selecting "active variables" in TEST data
+
   design <- xxt[,cleaps$which[jj,-1]==T]
-  # (ii) add a column of ones for the intercept
+  
   design <- cbind(rep(1,dim(xxt)[1]),design)
   PEcp<-sum((yyt-design%*%mmr$coef)^2)/length(yyt)
-  # the above is the pMSE for the current model.
-  # let's store it in a vector
+ 
   pmses[jj]<-PEcp
 }
 pmses
 realdimension
 
 windows()
-plot(realdimension,pmses) # plot the pmses vs the real dimensions of the models
+plot(realdimension,pmses) #Compare models by pMSE
 
 pmses
-# so a quite good model seem to have realdimension == 2. Let's find the smallest pmse for a model with dimension 3 
+
 pmses[realdimension==2]
-# this has to be the one with "origin" (obviously), "horsepower" and "weight" which has 14.622 (this is model #6)
 
 cleaps$which
 
-cleaps$which[3,]  # having pmse = 0.272191
+cleaps$which[3,] 
 
+#Pred vs test
+chosenmod <- lm(yy~xx[,cleaps$which[3,-1]==T]) 
+betachosen <- chosenmod$coefficients  
 
-# Now let's compare predictions using such model with the observed data from the test set
-chosenmod <- lm(yy~xx[,cleaps$which[3,-1]==T])  # fit the training data with our favorite model  (model #6)
-betachosen <- chosenmod$coefficients  # parameter estimates from our favorite model on training data
-# select "active variables" in TEST data, corresponding to model #6 
 designchosen <- xxt[,cleaps$which[3,-1]==T]
-#add a column of ones for the intercept
+
 designchosen <- cbind(rep(1,dim(xxt)[1]),designchosen)
-ypred <- designchosen%*%betachosen  # obtain predictions using the covariates from the test set
+ypred <- designchosen%*%betachosen  
 
 windows()
-plot(yyt,ypred,main="Test data analysis: y_pred vs y_test",xlab="y_test", ylab="y_pred")  # compare predictions with test responses
-abline(0,1,col="red")   # not bad!
+plot(yyt,
+     ypred,
+     main = "Test data analysis: y_pred vs y_test",
+     xlab = "y_test",
+     ylab = "y_pred")  
+abline(0,1,col="red")   
