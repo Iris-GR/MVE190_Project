@@ -1,7 +1,7 @@
 # Mini-analysis 1 
 
-# Set the working directory
-setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
+# Set the working directory (Set your own)
+#setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
 
 # Load relevant libraries
 library(vioplot)
