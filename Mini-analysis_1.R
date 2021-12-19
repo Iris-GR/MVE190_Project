@@ -83,6 +83,9 @@ colnames(abnb2) <-c("id",
 abnb_0free <- subset(abnb2, availability_365 > 0)
 abnb_0f <- subset(abnb_0free, price > 0)
 
+attach(abnb_0f)
+
+
 # Subdivide Abnb into accommodation types
 room <- subset(abnb_0f, room_type == "Private room")
 home <- subset(abnb_0f, room_type == "Entire home/apt")
@@ -204,6 +207,11 @@ linmod <- lm(I(sqrt(price)) ~ I(sqrt(dist)))
 summary(linmod)
 plot(sqrt(dist), sqrt(price))
 abline(linmod, col = "red3",  lwd = 2)
+#------------------- Some analysis tools I added at last minute ---------------#
 
+grDevices::windows()
+pairs(~price+latitude+longitude+dist+availability_365)
 
+grDevices::windows()
+pairs(~price+minimum_nights+reviews_per_month+number_of_reviews)
 
