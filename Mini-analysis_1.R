@@ -85,7 +85,6 @@ abnb_0f <- subset(abnb_0free, price > 0)
 
 attach(abnb_0f)
 
-
 # Subdivide Abnb into accommodation types
 room <- subset(abnb_0f, room_type == "Private room")
 home <- subset(abnb_0f, room_type == "Entire home/apt")
@@ -120,8 +119,6 @@ plot(dist, price,
      ylab = "Price [$/night]",
      main = "Price vs Distance to TriBeCa (Private Room)")
 abline(linmod, col="red3",  lwd = 2)
-text(20, 1100, expression("Linear fit"))
-text(20, 1000, expression(y == 145.6404 -5.2947*x))
 
 # Error plot
 zero <- numeric(length(price))
@@ -151,13 +148,13 @@ inf <- lm.influence(linmod)
 plot(inf$coefficients[,1],
      ylab = expression("Change in" ~ beta ~ 0),
      xlab = "Observation index",
-     main = "Cange in intercept when removing one observation at a time")
+     main = "Change in intercept when removing one observation at a time")
 abline(h =0, col = "red3",  lwd = 2)
 
 plot(inf$coefficients[,2],
      ylab = expression("Change in" ~ beta ~ 1),
      xlab = "Observation index",
-     main = "Cange in slope when removing one observation at a time")
+     main = "Change in slope when removing one observation at a time")
 abline(h =0, col = "red3",  lwd = 2)
 
 # log x
