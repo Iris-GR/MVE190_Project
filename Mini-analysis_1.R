@@ -1,7 +1,7 @@
 # Mini-analysis 1 
 
 # Set the working directory (Set your own)
-#setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
+setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
 
 # Load relevant libraries
 library(vioplot)
@@ -85,7 +85,6 @@ abnb_0f <- subset(abnb_0free, price > 0)
 
 attach(abnb_0f)
 
-
 # Subdivide Abnb into accommodation types
 room <- subset(abnb_0f, room_type == "Private room")
 home <- subset(abnb_0f, room_type == "Entire home/apt")
@@ -106,7 +105,7 @@ set.seed(123)
 samp <- room[sample(nrow(room), 750),]
 #samp <- shared_room[sample(nrow(shared_room), 1000), ]
 #samp <- home[sample(nrow(home), 1000), ]
-attach(samp)
+attach(room)
 
 # Fit linear model, distance to price (untransformed)
 linmod <- lm((price) ~ (dist))
@@ -119,13 +118,7 @@ plot(dist, price,
      xlab = "Distance [km]", 
      ylab = "Price [$/night]",
      main = "Price vs Distance to TriBeCa (Private Room)")
-
 abline(linmod, col="red3",  lwd = 2)
-text(20, 1100, expression("Linear fit"))
-text(20, 1000, expression(y == 145.6404 -5.2947*x))
-
-# weights or influence
-lm.influence(linmod)
 
 # Error plot
 zero <- numeric(length(price))
@@ -141,8 +134,28 @@ lines(c(-3, 30), c(0, 0), col = "blue", lwd = 2)
 # log y
 linmod <- lm(I(log(price)) ~ dist)
 summary(linmod)
-plot((dist), log(price))
+plot((dist), log(price),
+     xlab = "Distance [km]", 
+     ylab = "log(Price)",
+     main = "log(Price) vs Distance to TriBeCa (Private Room)")
 abline(linmod, col = "red3",  lwd = 2)
+text(26, 3, expression("Linear fit"))
+text(26, 2.5, expression(log(price) == 4.6348 -0.0348*(dist)))
+
+# weights or influence
+inf <- lm.influence(linmod)
+
+plot(inf$coefficients[,1],
+     ylab = expression("Change in" ~ beta ~ 0),
+     xlab = "Observation index",
+     main = "Change in intercept when removing one observation at a time")
+abline(h =0, col = "red3",  lwd = 2)
+
+plot(inf$coefficients[,2],
+     ylab = expression("Change in" ~ beta ~ 1),
+     xlab = "Observation index",
+     main = "Change in slope when removing one observation at a time")
+abline(h =0, col = "red3",  lwd = 2)
 
 # log x
 linmod <- lm((price) ~ log(dist))
