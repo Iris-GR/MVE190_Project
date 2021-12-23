@@ -1,7 +1,7 @@
 # The code for the apprentice dataset
 
 # Set the working directory (Set your own)
-#setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
+setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
 
 # Load libraries
 library(MASS)
@@ -68,7 +68,15 @@ plot(data$apprentices ~ I(1/(data$urbanization)))
 # Direction
 plot(data$apprentices ~ data$direction)
 plot(I(log(data$apprentices)) ~ data$direction)
-vioplot(data$apprentices ~ data$direction, col = "turquoise3")
+vioplot(data$apprentices ~ data$direction, 
+        col = "turquoise3",
+        cex = 1.1,
+        cex.axis = 1.3,
+        cex.main = 1.5,
+        cex.lab = 2,
+        xlab = "Direction",
+        ylab = "Nr. Apprentices",
+        main = "Distribution of Apprentices w.r.t Directions from Edinburgh",)
 
 # Apply transformation to the variables population and distance to get similar 
 # scale, then add to data.frame
@@ -274,6 +282,7 @@ plot(p.c.d,
      xlab = "Observation i", 
      ylab = "D",
      main = "Cook's distance for Poisson Model",
+     sub = "apprentices ~ urbanization + direction + log(population) + log(distance)",
      cex = 1.3,
      cex.lab = 1.3,
      cex.main = 1.5,
@@ -456,7 +465,7 @@ plot(nb.pearsons.r.std,
      xlab = "Observation i", 
      ylab = expression(r[i]), 
      ylim = c(-5, 5),
-     main = "Std. Pearson Residuals for Negative Binomial Model",
+     main = "Std. Pearson Residuals for Negative Binomial Model 1",
      sub = "apprentices ~ urbanization + log(population) + log(distance)",
      cex = 1.3,
      cex.lab = 1.3,
@@ -479,7 +488,7 @@ nb.c.d <- cooks.distance(nb.model)
 plot(nb.c.d, 
      xlab = "Observation i", 
      ylab = "D",
-     main = "Cook's distance for Negative Binomial Model",
+     main = "Cook's distance for Negative Binomial Model 1",
      sub = "apprentices ~ urbanization + log(population) + log(distance)",
      cex = 1.3,
      cex.lab = 1.3,
@@ -506,7 +515,7 @@ plot(nb.pearsons.r.std.a,
      xlab = "Observation i", 
      ylab = expression(r[i]), 
      ylim = c(-5, 5),
-     main = "Std. Pearson Residuals for Negative Binomial Model",
+     main = "Std. Pearson Residuals for Negative Binomial Model 2",
      sub = "apprentices ~ urbanization + direction + log(population) + log(distance)",
      cex = 1.3,
      cex.lab = 1.3,
