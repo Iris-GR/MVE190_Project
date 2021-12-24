@@ -488,13 +488,28 @@ nb.c.d <- cooks.distance(nb.model)
 plot(nb.c.d, 
      xlab = "Observation i", 
      ylab = "D",
-     main = "Cook's distance for Negative Binomial Model 1",
+     main = "Cook's Distance for Negative Binomial Model",
      sub = "apprentices ~ urbanization + log(population) + log(distance)",
      cex = 1.3,
      cex.lab = 1.3,
      cex.main = 1.5,
      pch=21,
      bg = 1)
+text(x = c(8, 9, 28, 29),
+     y = c(0.20, 0.10, 0.20, 0.10),
+     labels= c("Selkirk", "Lanark", "Inverness", "Ross"),
+     pos = 4)
+text(x = c(1, 3),
+     y = c(0.16, 0.125),
+     labels= c("Midlothian", "East Lothian"),
+     pos = 4)
+symbols(x = c(28, 29),
+        y = c(0.208, 0.11),
+        circles = c(0.5, 0.5),
+        add = T, 
+        inches = F, 
+        lwd = 2,
+        fg = c("red3", "red3"))
 
 # Influence measure for nb.model.a the model with 
 # apprentices ~ urbanization + direction + population.t + distance.t
