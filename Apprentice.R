@@ -1,4 +1,4 @@
-# The code for the apprentice dataset
+# The code for the apprentice dataset 
 
 # Set the working directory (Set your own)
 setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
