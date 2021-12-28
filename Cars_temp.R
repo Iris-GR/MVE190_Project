@@ -96,6 +96,7 @@ attach(cars)
 #### Final model, more in depth analysis #######################################
 
 # Select a final model from previous testing.
+# Interactions
 # Fit the model on the full dataset.
 # What are the coefficients and their interpretation.
 # Confidence intervals of coefficients. Plot CI for model.
