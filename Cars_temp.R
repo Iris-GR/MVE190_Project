@@ -1,10 +1,7 @@
-# Something 
-# Added new line
-
 # Temporary file for looking at the cars dataset
 
 # Set working directory (set your own)
-setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
+#setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
 
 # Load libraries
 library(corrplot)
