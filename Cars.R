@@ -180,7 +180,6 @@ grDevices::windows()
 pairs(~price + carlength + curbweight + wheelbase)
 
 
-
 # Curbweight, carlength, and wheelbase seem dependent?
 
 mod3 <- lm(price~curbweight)
@@ -199,29 +198,6 @@ vif(lm(
 # Removed curbweight.
 
 #Final toll: highwaympg, horsepower, enginesize, carwidth, comressionratio, carheight
-
-
-
-
-grDevices::windows()
-pairs(~price + highwaympg + curbweight + enginesize)
-
-
-vif(lm(
-  price ~  + horsepower + compressionratio + carheight + carwidth + curbweight ))
-
-
-mod6 <- lm(price~enginesize)
-summary(mod6) # r2adj = 0.3306
-
-
-# remove carlength
-vif(lm(
-  price ~ highwaympg + horsepower + enginesize + stroke + compressionratio + carheight + carwidth + wheelbase))
-
-# remove horsepower
-vif(lm(
-  price ~ highwaympg + enginesize + stroke + compressionratio + carheight + carwidth + wheelbase))
 
 grDevices::windows()
 pairs(~price + highwaympg + enginesize + compressionratio + curbweight + stroke)
