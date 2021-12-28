@@ -1,7 +1,7 @@
 # Temporary file for looking at the cars dataset
 
 # Set working directory (set your own)
-#setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
+setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
 
 # Load libraries
 library(corrplot)
@@ -74,7 +74,7 @@ attach(cars)
 #### Check multicollinearity among numerical variables #########################
 
 # Should only one of a group of correlated variables be used? Which one?
-# corrplot, VIF or other methods?
+# pairs,corrplot, VIF or other methods?
 # Is it possible to combine a few numeric variables?
 
 #### Creation of different models and comparison/testing #######################
@@ -91,7 +91,7 @@ attach(cars)
 # Maybe test the variance inflation factor (VIF)?
 # Akaike’s AIC and BIC criterion
 # Divide into test and training data and check predictability.
-# K-fold and/or Leave-one-out (LOOCV) cross validation
+# K-fold and/or Leave-one-out (LOOCV) cross validation.
 
 #### Final model, more in depth analysis #######################################
 
