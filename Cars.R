@@ -84,17 +84,17 @@ attach(cars)
 #----------------------- Sorting and removing variables -----------------------#
 # Only three cars have enginelocation == rear. 
 # Decided to remove these as they did not feel representative.
-cars <- subset(cars, enginelocation == "front")
+#cars <- subset(cars, enginelocation == "front")
 
 # Only small amount of cars with aspiration == turbo,
 # Decided to focus on cars with standard aspiration:
-cars <- subset(cars, aspiration == "std")
+#cars <- subset(cars, aspiration == "std")
 
 grDevices::windows()
 vioplot(compressionratio, main="Violin plot for compression ratio", ylab = "Compression ratio")
 # After lookin at the violin plot for compression ratio, I decided to remove
 # all cars with ratio over 15.
-cars <- subset(cars, compressionratio <= 15)
+#cars <- subset(cars, compressionratio <= 15)
 
 # Possibly also only look at gas cars? It seems that all diesel cars have
 # already been excluded??
@@ -105,15 +105,15 @@ plot(fueltype,price)
 grDevices::windows()
 vioplot(enginesize, main="Violin plot for engine size", ylab = "Compression ratio")
 
-cars <- subset(cars, enginesize <= 200)
+#cars <- subset(cars, enginesize <= 200)
 
 
 
-cars <- subset(cars, fueltype=="gas")
+#cars <- subset(cars, fueltype=="gas")
 
 
 # Suspect that id is not important for price:
-cars <- subset(cars, select = -c(car_ID))
+#cars <- subset(cars, select = -c(car_ID))
 
 attach(cars)
 
@@ -222,10 +222,14 @@ vioplot(log(price))
 
 m <-
   lm(
-    log(price) ~ drivewheel + cylindernumber + carwidth + compressionratio +
+    log(price) ~ drivewheel + carwidth + compressionratio +
       carheight + highwaympg + enginesize + log(horsepower),
     x = TRUE
   )
+
+#removed fueltype and cylindernumber
+
+
 X <- m$x  # extract the design matrix
 X <- X[,-c(1)] # remove the intercept column just because regsubsets function below does not want it
 X <- as.matrix(X)
@@ -243,7 +247,7 @@ m <-
     nvmax = dim(X)[2],
     method = c("ex"),
     really.big = T,
-    force.in = c(1,2,3,4,5,6)
+    force.in = c(1,2)
   )
 cleaps <- summary(m, matrix = T)
 cleaps$which
@@ -293,52 +297,210 @@ Models
 # model 1 has complexity 2 (= categorical covar + weight)
 # model 2 has complexity 2 (= categorical covar + horsepower)
 # etc
-complexity <- c(rep(2,8),rep(3,28),rep(4,56),rep(5,70),rep(6,56),rep(7,28),rep(8,8),9) # lazy and pedestrian...you can also write  complexity <- c(rep(2,5),...)
-
+#complexity <- c(rep(2,8),rep(3,28),rep(4,56),rep(5,70),rep(6,56),rep(7,28),rep(8,8),9) # lazy and pedestrian...you can also write  complexity <- c(rep(2,5),...)
+complexity <- c(rep(2,6),rep(3,15),rep(4,20),rep(5,15),rep(6,6),7)
 
 grDevices::windows()
-plot(complexity,PE)
+plot(complexity,PE) #Possibly model with complexity = 4 is good?
 
 # it seems that already with the smallest complexity we have a good model
 # with 2 covariates (complexity=2) the first model has PE=18.47;
 # with 3 covariates (complexity = 3) the sixth model has PE=17.51
 
 # the first model has PE=18.47
-Models[1,]
+
+PE[complexity == 5]
+
+
+Models[22,] # Model 22 with drivewheel, carwidth, compressionratio, and log(horsepower)
 #(Intercept) origineuropean originjapanese      cylinders   displacement     horsepower         weight   acceleration 
 #       TRUE           TRUE           TRUE          FALSE          FALSE          FALSE           TRUE          FALSE 
 
 # Weight is important
 
 # the sixth model has PE=17.51
-Models[6,]
+Models[42,] # or for complexity == 5 -> all but highwaymph and carheight
 #(Intercept) origineuropean originjapanese      cylinders   displacement     horsepower         weight   acceleration 
 #       TRUE           TRUE           TRUE          FALSE          FALSE           TRUE           TRUE          FALSE 
 
 # So Horsepower is also important 
 
 # Now let's compare predictions using the first with the observed data from the test set
-chosenmod <- lm(y[itrain]~X[itrain,Models[1,-1]==T])  # fit the training data with model #1
+chosenmod <- lm(y[itrain]~X[itrain,Models[22,-1]==T])  # fit the training data with model #1
 betachosen <- chosenmod$coefficients  # parameter estimates from training data
 # select "active variables" in TEST data, corresponding to model #1
-designchosen <- X[itest,Models[1,-1]==T]
+designchosen <- X[itest,Models[22,-1]==T]
 #add a column of ones for the intercept
 designchosen <- cbind(rep(1,dim(designchosen)[1]),designchosen)
 ypred <- designchosen%*%betachosen  # obtain predictions using the covariates from the test set
+
+grDevices::windows()
 plot(y[itest],ypred)  # compare predictions with test responses
 abline(0,1)   
 
-summary(lm(mpg~origin+weight))  # Model #1 --> Rsquared = 0.70 on the FULL data
+summary(lm(log(price)~drivewheel+log(horsepower)+carwidth+compressionratio))  # Model #1 --> Rsquared = 0.70 on the FULL data
 
 # Now let's compare predictions using the 6th model (horsepower+weight) with the observed test responses
-chosenmod <- lm(y[itrain]~X[itrain,Models[6,-1]==T]) 
+chosenmod <- lm(y[itrain]~X[itrain,Models[42,-1]==T]) 
 betachosen <- chosenmod$coefficients  # parameter estimates from our model on training data
 # select "active variables" in TEST data, corresponding to model #6
-designchosen <- X[itest,Models[6,-1]==T]
+designchosen <- X[itest,Models[42,-1]==T]
 #add a column of ones for the intercept
 designchosen <- cbind(rep(1,dim(designchosen)[1]),designchosen)
 ypred <- designchosen%*%betachosen  # obtain predictions using the covariates from the test set
+
+grDevices::windows()
 plot(y[itest],ypred)  # compare predictions with test responses
 abline(0,1)   # not bad!
 
-summary(lm(mpg~origin+horsepower+weight)) # Model #6 -->  Rsquared = 0.72 on the FULL data
+#summary(lm(mpg~origin+horsepower+weight)) # Model #6 -->  Rsquared = 0.72 on the FULL data
+
+
+#---------------------- Redo but with cylinder instead ------------------------#
+#Here the same procedure is done again for new model. Here, covariates are
+#roomtype, dist, number of reviews, and minimum nights (1 cat, 3 cont).
+#The procedure is otherwise the same as before, completely.
+
+#CON: Cannot set size for training and test data - not even split...
+#Instead, package contains other measures (AIC, Cp, etc).
+#Hence, do not get model through out-of-sample pred
+
+modols<-lm(log(price)~ cylindernumber + fueltype + drivewheel + carwidth + compressionratio +
+             carheight + highwaympg + enginesize + log(horsepower))
+out<-ols_step_all_possible(modols) #regression of all subsets.
+
+
+grDevices::windows() 
+plot(out) #Decide model after Mallow's Cp.
+#Look in out for the best model: 
+out
+
+
+# Now let's compare predictions using such model with the observed data from the test set
+chosenmod <- lm(yy~xx[,cleaps$which[6,-1]==T])  # fit the training data with our favorite model  (model #6)
+betachosen <- chosenmod$coefficients  # parameter estimates from our favorite model on training data
+# select "active variables" in TEST data, corresponding to model #6 
+designchosen <- xxt[,cleaps$which[6,-1]==T]
+#add a column of ones for the intercept
+designchosen <- cbind(rep(1,dim(xxt)[1]),designchosen)
+ypred <- designchosen%*%betachosen  # obtain predictions using the covariates from the test set
+plot(yyt,ypred)  # compare predictions with test responses
+abline(0,1)   # not bad!
+
+#--------------------------- Confidence interval ------------------------------#
+mymodel2<-lm(log(price)~drivewheel + compressionratio + log(horsepower) + carwidth,x=TRUE)
+summary(mymodel2) # Multiple R-squared:  0.8563
+# 95% confidence interval for beta1 "by hand":
+
+
+
+# let's first compute the residual standard error: this can be found from summary(mymodel3)$sigma
+# that is s = 14.9
+s = summary(mymodel2)$sigma  # also found via sqrt(sum(residuals(mymodel3)^2)/(10-3)) and summary(mymodel3)$sigma
+
+# now we need the inverse of X'X
+invXtX = summary(mymodel2)$cov.unscaled # this is inv(X'X)
+# find inverse "by hand"
+X <- mymodel2$x  # get design matrix
+solve(t(X)%*%X)  # invert X'X. Looks the same as invXtX. Great!
+
+# therefore the standard error for beta1 is
+se_beta1 = sqrt(s^2*invXtX[2,2])  # compare with summary(mymodel2), differences due to rounding since I hard-coded s=14.9 without further decimals
+# the 95% confidence interval for beta1 is
+36293.78 +c(1,-1)*qt(0.025,10-3)*se_beta1
+# or, see the second line of
+confint(mymodel2)  # differences due to rounding since I have hard-coded s=14.9 without further decimals
+
+#---------------------- Leverage ----------------------------------------------#
+# computation of leverage by hand
+#X <- matrix(c(rep(1,nrow(w)),w$x),nrow=nrow(w))
+#xtx <- t(X) %*% X
+#invxtx <- solve(xtx)
+#P <- X %*% invXtX %*% t(X)
+#v <- diag(P)  # same as v <- hatvalues(mod)
+
+V <- hatvalues(mymodel2)
+
+
+infl <- lm.influence(mymodel2) # will calculate basic influence measures
+# type ?lm.influence for more info
+s_i <- infl$sigma #a vector whose i-th element contains the estimate of the residual standard deviation obtained when the i-th case is dropped from the regression        
+# v <- infl$hat
+sum <- summary(mymodel2)
+#plot(s_i,ylim=c(0,6))  # <--this work just as well as the code below
+grDevices::windows()
+plot(s_i,xlab="i",ylab="s_(i)",
+     main="s_(i)")
+#points(Iout,s_i[Iout],col="red",pch=19)
+#points(Iinf,s_i[Iinf],col="green",pch=19)
+abline(h=sum$sigma)
+
+#----------------- studentised residuals --------------------------------------#
+# VERSION WITHOUT BONFERRONI CORRECTION (SEE BELOW FOR A FIX)
+r_stud <- rstudent(mymodel2)
+
+grDevices::windows()
+plot(r_stud,xlab="i",ylab="r*_i",
+     main="stud. residuals, +/- 2")
+#points(Iout,r_stud[Iout],col="red",pch=19)
+#points(Iinf,r_stud[Iinf],col="green",pch=19)
+abline(h=0)
+abline(h=2,col="red")
+abline(h=-2,col="red")
+
+# VERSION WITH BONFERRONI CORRECTION FOR MULTIPLE COMPARISON
+grDevices::windows()
+plot(r_stud,ylim=c(-7,7),xlab="i",ylab="r*_i",
+     main="stud. residuals, +/- T-Bonferroni corrected")
+#points(Iout,r_stud[Iout],col="red",pch=19)
+#points(Iinf,r_stud[Iinf],col="green",pch=19)
+abline(h=0)
+alpha_original = 0.05
+n <- 205#dim(cars)[1]  # n=50 observations
+alpha_bonferroni = alpha_original/n
+t_bonferroni = qt(alpha_bonferroni/2,n-1-2)  # quantile from a Student's t with n-1-p degrees of freedom at probability level alpha/(2*n)
+abline(h=t_bonferroni,col="red")
+abline(h=-t_bonferroni,col="red")
+
+#---------------------- Cook's distance ---------------------------------------#
+D<-cooks.distance(mymodel2)
+grDevices::windows()
+plot(D,ylim=c(0,1.2),xlab="i",ylab="D_i",
+     main="Cook's distance with D=4/n and D=1")
+#points(Iout,D[Iout],col="red",pch=19)
+#points(Iinf,D[Iinf],col="green",pch=19)
+abline(h=4/nrow(w))
+abline(h=1)
+## Standardized residuals:
+# r_std <- rstandard(mod)
+# r_std <- res/(sum$sigma*sqrt(1-v))
+# D <- r_std^2/2*v/(1-v)
+
+#------------------ DFBETAs ---------------------------------------------------#
+## Standardized change in beta-estimates (DFBETAS):
+# you may use dfbetas(mod)
+beta0_i <- infl$coefficients[,1] # gives the numerator for the DFBETA of beta0, type "?lm.influence" for details
+beta1_i <- infl$coefficients[,2] # gives the numerator for the DFBETA of beta1, type "?lm.influence" for details
+dfbeta_0=beta0_i/s_i/sqrt(invXtX[1,1])
+dfbeta_1=beta1_i/s_i/sqrt(invXtX[2,2])
+
+grDevices::windows()
+plot(dfbeta_0,ylim=c(-.5,.5),xlab="i",ylab="dfbeta_0(i)",
+     main="dfbeta_0 +/- 2/sqrt(n)")
+#points(Iout,dfbeta_0[Iout],col="red",pch=19)
+#points(Iinf,dfbeta_0[Iinf],col="green",pch=19)
+abline(h=0)
+abline(h=2/sqrt(nrow(w)),col="red")
+abline(h=-2/sqrt(nrow(w)),col="red")
+
+grDevices::windows()
+plot(dfbeta_1,ylim=c(-1,1),xlab="i",ylab="dfbeta_1(i)",
+     main="dfbeta_1 +/- 2/sqrt(n)")
+points(Iout,dfbeta_1[Iout],col="red",pch=19)
+points(Iinf,dfbeta_1[Iinf],col="green",pch=19)
+abline(h=0)
+abline(h=2/sqrt(nrow(w)),col="red")
+abline(h=-2/sqrt(nrow(w)),col="red")
+
+
+
