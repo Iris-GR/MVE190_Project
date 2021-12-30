@@ -18,13 +18,14 @@ library(dotwhisker)
 library(car)
 library(leaps)
 library(MASS)
+library(beepr)
 
 ##### Dataset preparation ######################################################
 
 # Load the cars dataset
 cars.0 <- data.frame(read.csv("CarPrice.csv", header = T ))
 
-# Add the numeric/continuous variables to dataset
+# Add the numeric/continuous variables to dataset 
 cont.var.index <- c(1, 2, 10:14, 17, 19:26)
 cars <- data.frame(cars.0[, cont.var.index])
 
@@ -119,9 +120,9 @@ plot(price ~ fuelsystem)
 vioplot(price ~ fuelsystem)
 summary(lm(price ~ fuelsystem))
 
-# Conclusion disregard: CarName, fueltype, aspiration, doornumber and 
-# enginelocation.
-# Include : drivewheel, (enginetype), cylindernumber and fuelsystem
+# Conclusion disregard: CarName, fueltype, aspiration, doornumber, 
+# enginelocation and enginetype
+# Include : drivewheel, cylindernumber and fuelsystem
 
 #### Check multicollinearity among numerical variables #########################
 plot(price ~ symboling)
@@ -138,8 +139,8 @@ summary(lm(carlength ~ carwidth))
 
 # Should only one of a group of correlated variables be used? Which one?
 # pairs,corrplot, VIF or other methods?
-summary(lm(price ~ cars$highwaympg))
-summary(lm(price ~ cars$citympg))
+summary(lm(cars$price ~ cars$highwaympg))
+summary(lm(cars$price ~ cars$citympg))
 
 summary(lm(price ~ cars$carlength))
 summary(lm(price ~ cars$carwidth))
@@ -158,19 +159,414 @@ chisq.test(table(cars$aspiration, cars$fueltype))
 chisq.test(table(cars$drivewheel, cars$fueltype))
 
 #### Creation of different models and comparison/testing #######################
-
 # Which are the most influential variables/ very non-interesting variables to discard?
+
+# First create different data subsets
+# Full cars dataset excluding car id
+cars.id.reduced <- data.frame(cars[, -1])
+
+# Only numerical/continuous variables (variables)
+cars.num <- data.frame(cars.id.reduced[, 1:15])
+  
+# Cars minus: CarName, fueltype, aspiration, doornumber, enginelocation and 
+# enginetype ( variables)
+cars.cat.reduced <- data.frame(cars.id.reduced[, -c(16:19, 22, 23)])
+  
+# cars.cat.reduced minus continuous highly correlated (carlength, wheelbase, 
+# citympg, carheight) ( variables)
+cars.cat.num.reduced <- data.frame(cars.cat.reduced[, -c(2, 3, 5, 13)])
+  
+# Cars.cat.num.reduced with horsepower log transformed
+cars.reduced.hp.trans <- data.frame(cars.cat.num.reduced[, -8])
+cars.reduced.hp.trans$log.horsepower <- log(cars$horsepower)
+
+# With horsepower and price log transformed
+cars.reduced.hp.price.trans <- data.frame(cars.reduced.hp.trans[, -10])
+cars.reduced.hp.price.trans$log.price <- log(cars$price)
+
+# Try the more automated version of model selection (backward search).
+# The olsrr does not divide data into test and training
+
+###############################
+# Full linear regression model on whole cars data set (excluding id)
+mod.1 <- lm(price ~ ., data = cars.id.reduced)
+
+# Ols step all possible search on full cars dataset
+mod.a1 <- ols_step_all_possible(mod.1)
+mod.a1
+plot(mod.a1)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.1)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols backward search based on akike criterion on full cars dataset
+mod.b1 <- ols_step_backward_aic(mod.1)
+mod.b1
+plot(mod.b1)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.1)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols forward step search based on akike criterion on full cars dataset
+mod.c1 <- ols_step_forward_aic(mod.1)
+mod.c1
+plot(mod.c1)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.1)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols backward search based on p-value criterion on full cars dataset
+mod.d1 <- ols_step_backward_p(mod.1)
+mod.d1
+plot(mod.d1)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.1)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols forward search based on p-value criterion on full cars dataset
+mod.e1 <- ols_step_forward_p(mod.1)
+mod.e1
+plot(mod.e1)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.1)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+###############################
+# Full linear regression model on only all numerical variables in cars data set 
+# (excluding id)
+mod.2 <- lm(price ~ ., data = cars.num)
+
+# Ols step all possible search on full cars dataset
+mod.a2 <- ols_step_all_possible(mod.2)
+mod.a2
+plot(mod.a2)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.2)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols backward search based on akike criterion on full cars dataset
+mod.b2 <- ols_step_backward_aic(mod.2)
+mod.b2
+plot(mod.b2)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.2)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols forward step search based on akike criterion on full cars dataset
+mod.c2 <- ols_step_forward_aic(mod.2)
+mod.c2
+plot(mod.c2)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.2)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols backward search based on p-value criterion on full cars dataset
+mod.d2 <- ols_step_backward_p(mod.2)
+mod.d2
+plot(mod.d2)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.2)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols forward search based on p-value criterion on full cars dataset
+mod.e2 <- ols_step_forward_p(mod.2)
+mod.e2
+plot(mod.e2)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.2)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+
+###################
+# Full linear regression model on numerical variables and 3 selected 
+# categorical variables ()
+mod.3 <- lm(price ~ ., data = cars.cat.reduced)
+
+# Ols step all possible search on full cars dataset
+mod.a3 <- ols_step_all_possible(mod.3)
+mod.a3
+plot(mod.a3)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.3)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols backward search based on akike criterion on full cars dataset
+mod.b3 <- ols_step_backward_aic(mod.3)
+mod.b3
+plot(mod.b3)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.3)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols forward step search based on akike criterion on full cars dataset
+mod.c3 <- ols_step_forward_aic(mod.3)
+mod.c3
+plot(mod.c3)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.3)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols backward search based on p-value criterion on full cars dataset
+mod.d3 <- ols_step_backward_p(mod.3)
+mod.d3
+plot(mod.d3)
+mod.d3$model
+mod.result <- mod.d3$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.3)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols forward search based on p-value criterion on full cars dataset
+mod.e3 <- ols_step_forward_p(mod.3)
+mod.e3
+plot(mod.e3)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.3)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+#############################
+# Full linear regression model on cars.cat.reduced minus continuous highly 
+# correlated (carlength, wheelbase, citympg, carheight)
+mod.4 <- lm(price ~ ., data = cars.cat.num.reduced)
+
+# Ols step all possible search on full cars dataset
+mod.a4 <- ols_step_all_possible(mod.4)
+mod.a4
+plot(mod.a4)
+mod.a4$model
+mod.result <- mod.a4$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.4)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols backward search based on akike criterion on full cars dataset
+mod.b4 <- ols_step_backward_aic(mod.4)
+mod.b4
+plot(mod.b4)
+mod.b4$model
+mod.result <- mod.b4$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.4)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols forward step search based on akike criterion on full cars dataset
+mod.c4 <- ols_step_forward_aic(mod.4)
+mod.c4
+plot(mod.c4)
+mod.c4$model
+mod.result <- mod.c4$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.4)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols backward search based on p-value criterion on full cars dataset
+mod.d4 <- ols_step_backward_p(mod.4)
+mod.d4
+plot(mod.d4)
+mod.d4$model
+mod.result <- mod.d4$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.4)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols forward search based on p-value criterion on full cars dataset
+mod.e4 <- ols_step_forward_p(mod.4)
+mod.e4
+plot(mod.e4)
+mod.e4$model
+mod.result <- mod.e4$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.4)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+#####################################
+# Full linear regression model on Cars.cat.num.reduced with horsepower 
+# log transformed
+mod.5 <- lm(price ~ ., data = cars.reduced.hp.trans)
+
+# Ols step all possible search on full cars dataset
+mod.a5 <- ols_step_all_possible(mod.5)
+beep(1)
+mod.a5
+plot(mod.a5)
+mod.a5$model
+mod.result <- mod.a5$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.5)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols backward search based on akike criterion on full cars dataset
+mod.b5 <- ols_step_backward_aic(mod.5)
+mod.b5
+plot(mod.b5)
+mod.b5$model
+mod.result <- mod.b5$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.5)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols forward step search based on akike criterion on full cars dataset
+mod.c5 <- ols_step_forward_aic(mod.5)
+mod.c5
+plot(mod.c5)
+mod.c5$model
+mod.result <- mod.c5$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.5)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols backward search based on p-value criterion on full cars dataset
+mod.d5 <- ols_step_backward_p(mod.5)
+mod.d5
+plot(mod.d5)
+mod.d5$model
+mod.result <- mod.d5$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.5)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols forward search based on p-value criterion on full cars dataset
+mod.e5 <- ols_step_forward_p(mod.5)
+mod.e5
+plot(mod.e5)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.5)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+######################
+# Full linear regression model on Cars.cat.num.reduced with horsepower and
+# price log transformed
+mod.6 <- lm(price ~ ., data = cars.reduced.hp.price.trans)
+
+# Ols step all possible search on full cars dataset
+mod.a6 <- ols_step_all_possible(mod.6)
+mod.a6
+plot(mod.a6)
+# mod.result <- lm()
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.6)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols backward search based on akike criterion on full cars dataset
+mod.b6 <- ols_step_backward_aic(mod.6)
+mod.b6
+plot(mod.b6)
+mod.b6$model
+mod.result <- mod.b6$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.6)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols forward step search based on akike criterion on full cars dataset
+mod.c6 <- ols_step_forward_aic(mod.6)
+mod.c6
+plot(mod.c6)
+mod.c6$model
+mod.result <- mod.c6$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.6)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols backward search based on p-value criterion on full cars dataset
+mod.d6 <- ols_step_backward_p(mod.6)
+mod.d6
+plot(mod.d6)
+mod.d6$model
+mod.result <- mod.d6$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.6)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+# Ols forward search based on p-value criterion on full cars dataset
+mod.e6 <- ols_step_forward_p(mod.6)
+mod.e6
+plot(mod.e6)
+mod.e6$model
+mod.result <- mod.e6$model
+ols_plot_resid_fit(mod.result, print_plot = TRUE)
+ols_plot_resid_stand(mod.result, print_plot = TRUE)
+ols_mallows_cp(mod.result, mod.6)
+ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
+
+###################
+# OLS Conclusions: 
+## Variables to remove:
+# (car_ID)
+# CarName
+# citympg
+# aspiration
+# curbweight
+# symboling
+# doornumber 
+# enginelocation
+# enginetype
+
+## variables to include:
+# horsepower/log(horsepower)
+# cylindernumber
+# fuelsystem
+# highwaympg
+# carwidth
+# peakrpm
+# Stroke
+
+## Maybe include variables:
+# boreratio
+# wheelbase
+# carbody
+# compressionratio
+# enginesize
+
+####################
 
 # Which variables are good to transform?
 # Residual standardization and plotting.
+# Make pMSE plots
 
-# Try the more automated version of model selection (backward search).
-# Make pMSE plots 
-
-model <- lm(price ~ carwidth + horsepower+ highwaympg+compressionratio)
-k <- 
-plot(k)
-ols_step_all_possible(model)
 # Narrow it down to a few models. 
 # Do nested/partial F-tests if possible.
 # Maybe test the variance inflation factor (VIF)?
@@ -190,3 +586,23 @@ ols_step_all_possible(model)
 # Compute Cook's distance and plot it to find influential obseravations.
 # Identify possible outliers. Should they be removed? If so re-fit model and 
 # redo analysis
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
