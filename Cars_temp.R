@@ -550,16 +550,20 @@ ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 # cylindernumber
 # fuelsystem
 # highwaympg
-# carwidth
-# peakrpm
-# Stroke
 
 ## Maybe include variables:
-# boreratio
-# wheelbase
-# carbody
-# compressionratio
 # enginesize
+# boreratio
+# carwidth
+# peakrpm
+# carbody
+# drivewheel
+
+## Maybe litle less include variables:
+# Stroke
+# wheelbase
+# compressionratio
+
 
 ####################
 
