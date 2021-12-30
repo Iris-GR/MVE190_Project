@@ -40,7 +40,7 @@ cars$CarName <- factor(CarName)
 
 # Fuel type
 cars$fueltype <- factor(fueltype)
-relevel(cars$fueltype, ref = "gas")
+cars$fueltype <- relevel(cars$fueltype, ref = "gas")
 
 # Aspiration
 cars$aspiration <- factor(aspiration)
@@ -50,26 +50,26 @@ cars$doornumber <- factor(doornumber)
 
 # Type of car body
 cars$carbody <- factor(carbody)
-relevel(cars$carbody, ref = "hatchback")
+cars$carbody <- relevel(cars$carbody, ref = "hatchback")
 
 # Type of wheel drive
 cars$drivewheel <- factor(drivewheel)
-relevel(cars$drivewheel , ref ="rwd")
+cars$drivewheel <- relevel(cars$drivewheel , ref ="rwd")
 
 # Engine location
 cars$enginelocation <- factor(enginelocation)
 
 # Engine type
 cars$enginetype <- factor(enginetype)
-relevel(cars$enginetype, ref = "ohc")
+cars$enginetype <- relevel(cars$enginetype, ref = "ohc")
 
 # Number of cylinders
 cars$cylindernumber <- factor(cylindernumber)
-relevel(cars$cylindernumber , ref ="four")
+cars$cylindernumber <- relevel(cars$cylindernumber , ref ="four")
 
 # Fuel system
 cars$fuelsystem <- factor(fuelsystem)
-relevel(cars$fuelsystem , ref ="2bbl")
+cars$fuelsystem <- relevel(cars$fuelsystem , ref ="2bbl")
 
 #### Data overview #############################################################
 attach(cars)
