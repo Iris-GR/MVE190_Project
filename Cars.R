@@ -40,7 +40,7 @@ cars$CarName <- factor(CarName)
 
 # Fuel type
 cars$fueltype <- factor(fueltype)
-relevel(cars$fueltype, ref = "gas")
+cars$fueltype <- relevel(cars$fueltype, ref = "gas")
 
 # Aspiration
 cars$aspiration <- factor(aspiration)
@@ -50,26 +50,26 @@ cars$doornumber <- factor(doornumber)
 
 # Type of car body
 cars$carbody <- factor(carbody)
-relevel(cars$carbody, ref = "hatchback")
+cars$carbody <- relevel(cars$carbody, ref = "hatchback")
 
 # Type of wheel drive
 cars$drivewheel <- factor(drivewheel)
-relevel(cars$drivewheel , ref ="rwd")
+cars$drivewheel <- relevel(cars$drivewheel , ref ="rwd")
 
 # Engine location
 cars$enginelocation <- factor(enginelocation)
 
 # Engine type
 cars$enginetype <- factor(enginetype)
-relevel(cars$enginetype, ref = "ohc")
+cars$enginetype <- relevel(cars$enginetype, ref = "ohc")
 
 # Number of cylinders
 cars$cylindernumber <- factor(cylindernumber)
-relevel(cars$cylindernumber , ref ="four")
+cars$cylindernumber <- relevel(cars$cylindernumber , ref ="four")
 
 # Fuel system
 cars$fuelsystem <- factor(fuelsystem)
-relevel(cars$fuelsystem , ref ="2bbl")
+cars$fuelsystem <- relevel(cars$fuelsystem , ref ="2bbl")
 
 #### Data overview #############################################################
 attach(cars)
@@ -223,7 +223,7 @@ vioplot(log(price))
 m <-
   lm(
     log(price) ~ drivewheel + carwidth + compressionratio +
-      carheight + highwaympg + enginesize + log(horsepower),
+      carheight + highwaympg + enginesize + log(horsepower)+carbody+peakrpm+boreratio,
     x = TRUE
   )
 
@@ -247,7 +247,7 @@ m <-
     nvmax = dim(X)[2],
     method = c("ex"),
     really.big = T,
-    force.in = c(1,2)
+    force.in = c(1,2,9,10,11,12)
   )
 cleaps <- summary(m, matrix = T)
 cleaps$which
@@ -297,8 +297,9 @@ Models
 # model 1 has complexity 2 (= categorical covar + weight)
 # model 2 has complexity 2 (= categorical covar + horsepower)
 # etc
-#complexity <- c(rep(2,8),rep(3,28),rep(4,56),rep(5,70),rep(6,56),rep(7,28),rep(8,8),9) # lazy and pedestrian...you can also write  complexity <- c(rep(2,5),...)
-complexity <- c(rep(2,6),rep(3,15),rep(4,20),rep(5,15),rep(6,6),7)
+complexity <- c(rep(2,8),rep(3,28),rep(4,56),rep(5,70),rep(6,56),rep(7,28),rep(8,8),9) # lazy and pedestrian...you can also write  complexity <- c(rep(2,5),...)
+#complexity <- c(rep(2,6),rep(3,15),rep(4,20),rep(5,15),rep(6,6),7)
+#complexity <- c(rep(2,9),rep(3,36),rep(4,84),rep(5,126),rep(6,126),rep(7,84),rep(8,36),rep(9,9),10)
 
 grDevices::windows()
 plot(complexity,PE) #Possibly model with complexity = 4 is good?
@@ -309,10 +310,12 @@ plot(complexity,PE) #Possibly model with complexity = 4 is good?
 
 # the first model has PE=18.47
 
-PE[complexity == 5]
+PE[complexity == 3]
+
+PE
 
 
-Models[22,] # Model 22 with drivewheel, carwidth, compressionratio, and log(horsepower)
+Models[9,] # Model 22 with drivewheel, carwidth, compressionratio, and log(horsepower)
 #(Intercept) origineuropean originjapanese      cylinders   displacement     horsepower         weight   acceleration 
 #       TRUE           TRUE           TRUE          FALSE          FALSE          FALSE           TRUE          FALSE 
 
@@ -326,10 +329,10 @@ Models[42,] # or for complexity == 5 -> all but highwaymph and carheight
 # So Horsepower is also important 
 
 # Now let's compare predictions using the first with the observed data from the test set
-chosenmod <- lm(y[itrain]~X[itrain,Models[22,-1]==T])  # fit the training data with model #1
+chosenmod <- lm(y[itrain]~X[itrain,Models[9,-1]==T])  # fit the training data with model #1
 betachosen <- chosenmod$coefficients  # parameter estimates from training data
 # select "active variables" in TEST data, corresponding to model #1
-designchosen <- X[itest,Models[22,-1]==T]
+designchosen <- X[itest,Models[9,-1]==T]
 #add a column of ones for the intercept
 designchosen <- cbind(rep(1,dim(designchosen)[1]),designchosen)
 ypred <- designchosen%*%betachosen  # obtain predictions using the covariates from the test set
@@ -365,15 +368,15 @@ abline(0,1)   # not bad!
 #Instead, package contains other measures (AIC, Cp, etc).
 #Hence, do not get model through out-of-sample pred
 
-modols<-lm(log(price)~ cylindernumber + fueltype + drivewheel + carwidth + compressionratio +
-             carheight + highwaympg + enginesize + log(horsepower))
+modols<-lm(log(price)~ symboling + cylindernumber + fuelsystem + drivewheel + carwidth + compressionratio +
+             carheight + highwaympg + enginesize + log(horsepower)+carbody+peakrpm+boreratio)
 out<-ols_step_all_possible(modols) #regression of all subsets.
 
 
 grDevices::windows() 
 plot(out) #Decide model after Mallow's Cp.
 #Look in out for the best model: 
-out
+com4 <- subset(out, n == 4 )
 
 
 # Now let's compare predictions using such model with the observed data from the test set
@@ -502,5 +505,34 @@ abline(h=0)
 abline(h=2/sqrt(nrow(w)),col="red")
 abline(h=-2/sqrt(nrow(w)),col="red")
 
+#------------------------------- Interactions ---------------------------------#
+
+#Here we also take into account interactions between the covariates. We look 
+#here at interaction between roomtype and distance. 
+
+full_interactions <-
+  lm(log(price) ~ drivewheel + carbody + log(horsepower) + carwidth + 
+  drivewheel:carbody + drivewheel:log(horsepower) + drivewheel:carwidth +
+  carbody:log(horsepower)+carbody:carwidth+log(horsepower):carwidth, x = TRUE)
+summary(full_interactions)
+
+#To see if interactions are needed, we do a partial F test, where
+#the full model contains the interaction term, and the reduced does not.
+red_interactions <- lm(log(price) ~ drivewheel + carbody + log(horsepower) + carwidth)
+summary(red_interactions)
+
+
+grDevices::windows()
+plot(room_type,log(price))
+
+
+plot3d(dist,r_type,log(price))
+
+#Anova is used for this partial F test (it works because the models
+# are nested). H0 is that the reduced model will not increase SSerror enough
+#for it to be problematic (so H0 = reduced model ok)
+anova(red_interactions,full_interactions)
+qf(1-0.05,1,length(price)-6)
+#Fobs>Fstat -> reject H0 and continue on with full model.
 
 
