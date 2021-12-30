@@ -36,7 +36,7 @@ cars$CarName <- factor(cars.0$CarName)
 
 # Fuel type
 cars$fueltype <- factor(cars.0$fueltype)
-relevel(cars$fueltype, ref = "gas")
+cars$fueltype <-relevel(cars$fueltype, ref = "gas")
 
 # Aspiration
 cars$aspiration <- factor(cars.0$aspiration)
@@ -46,26 +46,26 @@ cars$doornumber <- factor(cars.0$doornumber)
 
 # Type of car body
 cars$carbody <- factor(cars.0$carbody)
-relevel(cars$carbody, ref = "hatchback")
+cars$carbody <-relevel(cars$carbody, ref = "hatchback")
 
 # Type of wheel drive
 cars$drivewheel <- factor(cars.0$drivewheel)
-relevel(cars$drivewheel , ref ="rwd")
+cars$drivewheel <-relevel(cars$drivewheel , ref ="rwd")
 
 # Engine location
 cars$enginelocation <- factor(cars.0$enginelocation)
 
 # Engine type
 cars$enginetype <- factor(cars.0$enginetype)
-relevel(cars$enginetype, ref = "ohc")
+cars$enginetype <- relevel(cars$enginetype, ref = "ohc")
 
 # Number of cylinders
 cars$cylindernumber <- factor(cars.0$cylindernumber)
-relevel(cars$cylindernumber , ref ="four")
+cars$cylindernumber <-relevel(cars$cylindernumber , ref ="four")
 
 # Fuel system
 cars$fuelsystem <- factor(cars.0$fuelsystem)
-relevel(cars$fuelsystem , ref ="2bbl")
+cars$fuelsystem <- relevel(cars$fuelsystem , ref ="2bbl")
 
 #### Data overview #############################################################
 attach(cars)
@@ -173,15 +173,15 @@ cars.num <- data.frame(cars.id.reduced[, 1:15])
 cars.cat.reduced <- data.frame(cars.id.reduced[, -c(16:19, 22, 23)])
   
 # cars.cat.reduced minus continuous highly correlated (carlength, wheelbase, 
-# citympg, carheight) ( variables)
-cars.cat.num.reduced <- data.frame(cars.cat.reduced[, -c(2, 3, 5, 13)])
+# citympg, carheight, curbweight) ( variables)
+cars.cat.num.reduced <- data.frame(cars.cat.reduced[, -c(2, 3, 5, 6, 13)])
   
 # Cars.cat.num.reduced with horsepower log transformed
-cars.reduced.hp.trans <- data.frame(cars.cat.num.reduced[, -8])
+cars.reduced.hp.trans <- data.frame(cars.cat.num.reduced[, -7])
 cars.reduced.hp.trans$log.horsepower <- log(cars$horsepower)
 
 # With horsepower and price log transformed
-cars.reduced.hp.price.trans <- data.frame(cars.reduced.hp.trans[, -10])
+cars.reduced.hp.price.trans <- data.frame(cars.reduced.hp.trans[, -9])
 cars.reduced.hp.price.trans$log.price <- log(cars$price)
 
 # Try the more automated version of model selection (backward search).
@@ -343,7 +343,7 @@ ols_plot_resid_stand(mod.result, print_plot = TRUE)
 ols_mallows_cp(mod.result, mod.3)
 ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
-# Ols forward search based on p-value criterion on full cars dataset
+# Ols forward search based on p-value criterion 
 mod.e3 <- ols_step_forward_p(mod.3)
 mod.e3
 plot(mod.e3)
@@ -369,7 +369,7 @@ ols_plot_resid_stand(mod.result, print_plot = TRUE)
 ols_mallows_cp(mod.result, mod.4)
 ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
-# Ols backward search based on akike criterion on full cars dataset
+# Ols backward search based on akike criterion 
 mod.b4 <- ols_step_backward_aic(mod.4)
 mod.b4
 plot(mod.b4)
@@ -380,7 +380,7 @@ ols_plot_resid_stand(mod.result, print_plot = TRUE)
 ols_mallows_cp(mod.result, mod.4)
 ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
-# Ols forward step search based on akike criterion on full cars dataset
+# Ols forward step search based on akike criterion 
 mod.c4 <- ols_step_forward_aic(mod.4)
 mod.c4
 plot(mod.c4)
@@ -430,7 +430,7 @@ ols_plot_resid_stand(mod.result, print_plot = TRUE)
 ols_mallows_cp(mod.result, mod.5)
 ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
-# Ols backward search based on akike criterion on full cars dataset
+# Ols backward search based on akike criterion on 
 mod.b5 <- ols_step_backward_aic(mod.5)
 mod.b5
 plot(mod.b5)
@@ -441,7 +441,7 @@ ols_plot_resid_stand(mod.result, print_plot = TRUE)
 ols_mallows_cp(mod.result, mod.5)
 ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
-# Ols forward step search based on akike criterion on full cars dataset
+# Ols forward step search based on akike criterion
 mod.c5 <- ols_step_forward_aic(mod.5)
 mod.c5
 plot(mod.c5)
@@ -452,7 +452,7 @@ ols_plot_resid_stand(mod.result, print_plot = TRUE)
 ols_mallows_cp(mod.result, mod.5)
 ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
-# Ols backward search based on p-value criterion on full cars dataset
+# Ols backward search based on p-value criterion 
 mod.d5 <- ols_step_backward_p(mod.5)
 mod.d5
 plot(mod.d5)
@@ -463,7 +463,7 @@ ols_plot_resid_stand(mod.result, print_plot = TRUE)
 ols_mallows_cp(mod.result, mod.5)
 ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
-# Ols forward search based on p-value criterion on full cars dataset
+# Ols forward search based on p-value criterion
 mod.e5 <- ols_step_forward_p(mod.5)
 mod.e5
 plot(mod.e5)
@@ -476,19 +476,23 @@ ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 ######################
 # Full linear regression model on Cars.cat.num.reduced with horsepower and
 # price log transformed
-mod.6 <- lm(price ~ ., data = cars.reduced.hp.price.trans)
+mod.6 <- lm(log.price ~ ., data = cars.reduced.hp.price.trans)
 
-# Ols step all possible search on full cars dataset
+# Ols step all possible search 
 mod.a6 <- ols_step_all_possible(mod.6)
 mod.a6
 plot(mod.a6)
-# mod.result <- lm()
+mod.a6$model
+# 378
+mod.result <-
+  lm(log.price ~ carwidth + carbody + fuelsystem + log.horsepower,
+     data = cars.reduced.hp.price.trans)
 ols_plot_resid_fit(mod.result, print_plot = TRUE)
 ols_plot_resid_stand(mod.result, print_plot = TRUE)
 ols_mallows_cp(mod.result, mod.6)
 ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
-# Ols backward search based on akike criterion on full cars dataset
+# Ols backward search based on akike criterion 
 mod.b6 <- ols_step_backward_aic(mod.6)
 mod.b6
 plot(mod.b6)
@@ -499,7 +503,7 @@ ols_plot_resid_stand(mod.result, print_plot = TRUE)
 ols_mallows_cp(mod.result, mod.6)
 ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
-# Ols forward step search based on akike criterion on full cars dataset
+# Ols forward step search based on akike criterion 
 mod.c6 <- ols_step_forward_aic(mod.6)
 mod.c6
 plot(mod.c6)
@@ -510,7 +514,7 @@ ols_plot_resid_stand(mod.result, print_plot = TRUE)
 ols_mallows_cp(mod.result, mod.6)
 ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
-# Ols backward search based on p-value criterion on full cars dataset
+# Ols backward search based on p-value criterion 
 mod.d6 <- ols_step_backward_p(mod.6)
 mod.d6
 plot(mod.d6)
@@ -521,7 +525,7 @@ ols_plot_resid_stand(mod.result, print_plot = TRUE)
 ols_mallows_cp(mod.result, mod.6)
 ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
-# Ols forward search based on p-value criterion on full cars dataset
+# Ols forward search based on p-value criterion 
 mod.e6 <- ols_step_forward_p(mod.6)
 mod.e6
 plot(mod.e6)
@@ -558,11 +562,11 @@ ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 # peakrpm
 # carbody
 # drivewheel
+# compressionratio
 
 ## Maybe litle less include variables:
 # Stroke
 # wheelbase
-# compressionratio
 
 
 ####################
@@ -595,10 +599,27 @@ ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
 
 
+mod.red <-
+  lm(log.price ~ carwidth + carbody + drivewheel + log.horsepower,
+     data = cars.reduced.hp.price.trans)
+mod.red <-
+  lm(log.price ~ carwidth + carbody  + log.horsepower,
+     data = cars.reduced.hp.price.trans)
+
+summary(mod.red)
 
 
+mod.full <-
+   lm(log.price ~ carwidth + carbody + drivewheel+ log.horsepower +
+        carbody*drivewheel,
+      data = cars.reduced.hp.price.trans)
 
+mod.full <-
+  lm(log.price ~ carwidth + carbody + drivewheel+ log.horsepower +
+       log.horsepower*drivewheel,
+     data = cars.reduced.hp.price.trans)
 
+anova(mod.red , mod.full)
 
 
 
