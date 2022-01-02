@@ -296,7 +296,6 @@ ols_plot_resid_stand(mod.result, print_plot = TRUE)
 ols_mallows_cp(mod.result, mod.2)
 ols_prep_outlier_obs(ols_prep_cdplot_data(mod.result))
 
-
 ###################
 # Full linear regression model on numerical variables and 3 selected 
 # categorical variables ()
