@@ -217,7 +217,7 @@ vioplot(log(price))
 
 #### Creation of models and comparison/testing (test/training data) ############
 
-# pmse....
+# pmse....?
 
 
 #### Creation of models and comparison/testing (olsrr package) #################
@@ -299,7 +299,7 @@ summary(mod.1a.result)
 # Fit the final model on the full dataset
 # mod.final <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
 #                   drivewheel, data = cars)
-mod.final <- lm(I(log(price)) ~ log(carwidth) + I(log(horsepower)) + carbody + 
+mod.final <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
                   drivewheel, data = cars)
 
 # What are the coefficients and their interpretation?
