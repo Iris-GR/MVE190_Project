@@ -128,7 +128,7 @@ plot(price ~ fuelsystem)
 vioplot(price ~ fuelsystem)
 summary(lm(price ~ fuelsystem))
 
-# The type of car body ()
+# The type of car body
 plot(price ~ carbody)
 vioplot(price ~ carbody)
 summary(lm(price ~ carbody))
@@ -222,34 +222,39 @@ vioplot(log(price))
 
 #### Creation of models and comparison/testing (olsrr package) #################
 
-#### The ols_step_all_possible takes to long time if run with all variables in
+#### The ols_step_all_possible takes to long time if run with many variables from
 # the cars dataset at once. First test the backward step search with respect to
-# aic and the p-value on the full cars dataset (excluding the carID(not 
-# relevant), enginelocation and carname)
+# aic and the p-value on the dataset (excluding the carID,
+# enginelocation, carname and the linearly dependent vnumeric variables)
+
+mod.0 <- lm(I(log(price)) ~ symboling + carwidth + carheight + enginesize + 
+              boreratio + stroke + compressionratio + I(log(horsepower)) + 
+              peakrpm + highwaympg + carbody+ drivewheel + enginelocation +
+              enginetype + cylindernumber + fuelsystem, data = cars)
 
 ## Ols backward search based on akaike criterion 
-mod.1b <- ols_step_backward_aic(mod.1)
-mod.1b
+mod.0b <- ols_step_backward_aic(mod.1)
+mod.0b
 grDevices::windows()
-plot(mod.1b)
+plot(mod.0b)
 
 ## Ols forward step search based on akaike criterion 
-mod.1c <- ols_step_forward_aic(mod.1)
-mod.1c
+mod.0c <- ols_step_forward_aic(mod.0)
+mod.0c
 grDevices::windows()
 plot(mod.1c)
 
 ## Ols backward search based on p-value criterion 
-mod.1d <- ols_step_backward_p(mod.1)
-mod.1d
+mod.0d <- ols_step_backward_p(mod.0)
+mod.0d
 grDevices::windows()
-plot(mod.1d)
+plot(mod.0d)
 
 ## Ols forward search based on p-value criterion 
-mod.1e <- ols_step_forward_p(mod.1)
-mod.1e
+mod.0e <- ols_step_forward_p(mod.0)
+mod.0e
 grDevices::windows()
-plot(mod.1e)
+plot(mod.0e)
 
 #### Linear regression model containing the 4 chosen categorical variables and 
 # the non-linearly dependent numeric variables (price and horsepower log 
@@ -292,7 +297,9 @@ summary(mod.1a.result)
 # log(price) ~ carwidth + log(horsepower) + carbody + drivewheel
 
 # Fit the final model on the full dataset
-mod.final <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
+# mod.final <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
+#                   drivewheel, data = cars)
+mod.final <- lm(I(log(price)) ~ log(carwidth) + I(log(horsepower)) + carbody + 
                   drivewheel, data = cars)
 
 # What are the coefficients and their interpretation?
@@ -308,14 +315,20 @@ plot(mod.final$fitted.values ~ I(log(price)))
 # Residuals
 ols_plot_resid_fit(mod.final, print_plot = TRUE)
 
-# Standardized and studentized residuals (!!! fix so that it is studentized to)
+# Standardized residuals 
 ols_plot_resid_stand(mod.final, print_plot = TRUE)
-#ols_plot_resid_stud(mod.final, print_plot = TRUE)
+
+# Studentized residuals 
+ols_plot_resid_stud(mod.final, print_plot = TRUE)
 
 # Compute Cook's distance and plot it to find influential observations
 ols_plot_cooksd_chart(mod.final, print_plot = TRUE)
 ols_plot_cooksd_bar(mod.final, print_plot = TRUE)
 
+# Observation 168 appears to be a bit extreme and quite influential. What is 
+# special about #168?
+log(price[168])
+mod.final$fitted.values[168]
 
 #### Check if interactions are significant at alpha = 0.05 level (add one 
 # interaction at a time)
@@ -331,9 +344,9 @@ anova(mod.red , mod.full)
 # log(horsepower) and carbody is worth having over the reduced model according 
 # to F-test. 
 
-# Standardized and studentized residuals (!!! fix so that it is studentized to)
+# Standardized and studentized residuals 
 ols_plot_resid_stand(mod.full, print_plot = TRUE)
-#ols_plot_resid_stud(mod.final, print_plot = TRUE)
+ols_plot_resid_stud(mod.full, print_plot = TRUE)
 
 # Compute Cook's distance and plot it to find influential observations
 ols_plot_cooksd_chart(mod.full, print_plot = TRUE)
