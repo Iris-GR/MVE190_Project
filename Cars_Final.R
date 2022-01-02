@@ -291,22 +291,9 @@ summary(mod.1a.result)
 # Best model selected from previous testing:
 # log(price) ~ carwidth + log(horsepower) + carbody + drivewheel
 
-# Check if interactions are significant at alpha = 0.05 level (add one 
-# interaction at a time)
-mod.full <- lm(I(log(price)) ~ carwidth+ I(log(horsepower)) * carbody +
-               drivewheel, data = cars)
-mod.red <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
-                drivewheel, data = cars) 
-
-# Partial F-test on nested models
-anova(mod.red , mod.full)
-
-# Conclusion: The model with primary effects and the interaction between 
-# log(horsepower) and carbody is worth having over the reduced model
-
 # Fit the final model on the full dataset
 mod.final <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
-                  drivewheel + I(log(horsepower)) * carbody, data = cars)
+                  drivewheel, data = cars)
 
 # What are the coefficients and their interpretation?
 summary(mod.final)
@@ -316,6 +303,7 @@ summary(mod.final)
 
 # Plot the observed Y vs Y_hat.
 ols_plot_obs_fit(mod.final, print_plot = TRUE)
+plot(mod.final$fitted.values ~ I(log(price)))
 
 # Residuals
 ols_plot_resid_fit(mod.final, print_plot = TRUE)
@@ -328,15 +316,32 @@ ols_plot_resid_stand(mod.final, print_plot = TRUE)
 ols_plot_cooksd_chart(mod.final, print_plot = TRUE)
 ols_plot_cooksd_bar(mod.final, print_plot = TRUE)
 
-# The car with ID nr 99 appears to have very high influence. Investigate
 
-plot(mod.final$fitted.values ~ I(log(price)))
+#### Check if interactions are significant at alpha = 0.05 level (add one 
+# interaction at a time)
+mod.full <- lm(I(log(price)) ~ carwidth+ I(log(horsepower)) * carbody +
+                 drivewheel, data = cars)
+mod.red <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
+                drivewheel, data = cars) 
 
-# Identify possible outliers. Should they be removed? If so re-fit model and 
-# redo analysis
+# Partial F-test on nested models
+anova(mod.red , mod.full)
 
+# The model with primary effects and the interaction between 
+# log(horsepower) and carbody is worth having over the reduced model according 
+# to F-test. 
 
+# Standardized and studentized residuals (!!! fix so that it is studentized to)
+ols_plot_resid_stand(mod.full, print_plot = TRUE)
+#ols_plot_resid_stud(mod.final, print_plot = TRUE)
 
+# Compute Cook's distance and plot it to find influential observations
+ols_plot_cooksd_chart(mod.full, print_plot = TRUE)
+log(price[99])
+mod.final$fitted.values[99]
+
+# However, the addition of interaction leads to observation 99 being an outlier
+# and very influential. So the conclusion is to not include the interaction term
 
 
 
