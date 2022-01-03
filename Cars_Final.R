@@ -215,11 +215,6 @@ vioplot(price)
 vioplot(log(horsepower))
 vioplot(log(price))
 
-#### Creation of models and comparison/testing (test/training data) ############
-
-# pmse....?
-
-
 #### Creation of models and comparison/testing (olsrr package) #################
 
 #### The ols_step_all_possible takes to long time if run with many variables from
@@ -290,76 +285,278 @@ mod.1a.result <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody +
                       drivewheel, data = cars)
 summary(mod.1a.result)
 
+#### Predicting “unseen observations” (Test and training data) #################
+
+# First do k-fold cross validation to find models. The function regsubset from 
+# the leaps package can not handle several categorical covariates at one and 
+# furthermore not either categorical covariates with with more than a few levels.
+# For example "fuelsystem" can not be run. Test models with all numeric 
+# variables that are not strongly correlated with each other and then carbody,
+# and "drivewheel", as "cylindernumber" and "fuelsystem" were not possible.
+
+m <- lm(I(log(price)) ~ symboling + carwidth + carheight + enginesize + 
+          boreratio + stroke + compressionratio + I(log(horsepower)) + 
+          peakrpm + highwaympg + carbody + drivewheel, data = cars, x = T)
+
+# Extract the design matrix from model "m"
+X <- m$x  
+
+# Remove the intercept column from design matrix
+X <- X[, -c(1)]
+X <- as.matrix(X)
+
+# Set the y variable
+y <- log(cars$price)
+
+# Force in columns that contain the levels of the categorical covariates
+m <- regsubsets(X, 
+                y, 
+                int = T, 
+                nbest = 1000, # !!! try maybe nbest = 1?
+                nvmax = dim(X)[2],
+                method = c("ex"), 
+                really.big = T, 
+                force.in = c(11:16))
+
+cleaps <- summary(m, matrix = T)
+
+# Print models and display which covariates have been forced in 
+cleaps$which
+
+# Reorder the columns according to the order found in cleaps$which
+col.order <- c(colnames(cleaps$which))
+
+# Also reorder the columns in X according to the order found in cleaps$which
+X <- X[, col.order[-1]]
+
+# Save the models produced by cleaps$which in varaiable called "Models"
+Models <- cleaps$which
+
+# Set randomization seed for reproducibility
+set.seed(123)  
+
+# The number of partitions to the dataset 
+K <- 5
+
+# The number of observations
+n <- length(y)
+
+# Pseudo randomize the order of indexes i
+ii <- sample(seq(1,n), n) 
+
+# The fold size
+foldsize <- floor(n / K)
+
+# For this dataset the n/k is even so each fold has same size
+sizefold <- rep(foldsize, K)
+
+# Create empty matrix for the prediction error
+Pred.errors <- matrix(0, dim(Models)[1], K)
+
+# Initialize number of indeces used for testing
+iused <- 0  
+
+# For each fold
+for (k in (1:K)) {
+  
+  # The current testing set
+  itest <- ii[(iused + 1):(iused + sizefold[k])]
+  
+  # The current training set
+  itrain <- ii[-c((iused + 1):(iused + sizefold[k]))]
+  
+  # Note the used fold indexes
+  iused <- iused + length(itest) 
+  
+  # Only intercept
+  Pred.errors[1,k] <- sum((y[itest] - mean(y[itrain]))^2)  
+  
+  # For all model subsets
+  for (mm in (1:dim(Models)[1])) { 
+    
+    # The design matrix for training for model mm
+    xtrain <- X[itrain,Models[mm,2:dim(Models)[2]]]
+    
+    # Insert the intercept column (ones) for estimation also of the intercept 
+    # via least squares
+    xtrain <- cbind(rep(1, dim(xtrain)[1]), xtrain)  
+    
+    # Least squares formula for parameter estimates
+    beta.hat <- solve(t(xtrain) %*% xtrain) %*% t(xtrain) %*% y[itrain]  
+    
+    # Extract design matrix for testing for model mm 
+    xtest <- X[itest, Models[mm, 2:dim(Models)[2]]]
+    
+    # Insert the intercept column (ones) to be albe to make predictions
+    xtest <- cbind(rep(1, dim(xtest)[1]), xtest)  
+    
+    # Calculate the predicted y
+    ypred <- xtest %*% beta.hat
+    
+    # Calculate the predicted errors for the predicted y
+    Pred.errors[mm, k] <- sum((y[itest] - ypred) ^ 2) 
+  }
+}
+
+# Save the final prediction errors for the models 
+PE <- apply(Pred.errors, 1, sum) / n  
+
+# Rearrange the PE values according to increasing model complexity (does not 
+# really work, to many levels in the categorical covariates)
+Models
+complexity <- c(rep(2,11),
+                rep(3,55),
+                rep(4,165),
+                rep(5,330),
+                rep(6,462),
+                rep(7,462),
+                rep(8,330),
+                rep(9,165),
+                rep(10,55), 
+                rep(111,11),
+                12)
+
+# Plot the complexity vs the prediction error (Note, not right complexity!)
+grDevices::windows()
+plot(complexity,PE) 
+
+# The prediction error for the chosen model:
+# log(price) ~ carwidth + log(horsepower) + carbody + drivewheel
+PE[complexity == 2]
+Models[11,] 
+
+# The chosen model
+chosen.mod <- lm(y[itrain] ~ X[itrain, Models[11, -1] == T])
+
+# Parameter estimates from chosen enmodel on training data
+beta.chosen <- chosen.mod$coefficients  
+
+# Select the variables active in chosen model from the test data
+design.chosen <- X[itest, Models[11, -1] == T]
+
+# Insert a column (ones) for the intercept
+design.chosen <- cbind(rep(1, dim(design.chosen)[1]), design.chosen)
+
+# obtain predictions using the covariates from the (last) test set 
+ypred <- design.chosen %*% beta.chosen
+
+# Compare predictions with test responses
+grDevices::windows()
+plot(y[itest], 
+     ypred,
+     xlab = "Y test", 
+     ylab = "Y prdiction",
+     main = "Predicted Response VS Test Response",
+     sub = "",
+     cex = 1.2,
+     cex.lab = 1.3,
+     cex.main = 1.5,
+     pch=21,
+     bg = 1)
+abline(0, 
+       1,
+       lwd = 1.5)   
 
 #### Final model, more in depth analysis #######################################
 
 # Best model selected from previous testing:
 # log(price) ~ carwidth + log(horsepower) + carbody + drivewheel
 
-# Fit the final model on the full dataset
-# mod.final <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
-#                   drivewheel, data = cars)
-mod.final <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
-                  drivewheel, data = cars)
-
 # Check so that log(horsepower) and carwidth are not linearly correlated
 vif(lm(I(log(price)) ~ carwidth + I(log(horsepower)) , data = cars))
 
-# What are the coefficients and their interpretation?
-summary(mod.final)
-
-# Confidence intervals of coefficients. Plot CI for model.
-
-
-# Plot the observed Y vs Y_hat.
-ols_plot_obs_fit(mod.final, print_plot = TRUE)
-plot(mod.final$fitted.values ~ I(log(price)))
-
-# Residuals
-ols_plot_resid_fit(mod.final, print_plot = TRUE)
-
-# Standardized residuals 
-ols_plot_resid_stand(mod.final, print_plot = TRUE)
-
-# Studentized residuals 
-ols_plot_resid_stud(mod.final, print_plot = TRUE)
-
-# Compute Cook's distance and plot it to find influential observations
-ols_plot_cooksd_chart(mod.final, print_plot = TRUE)
-ols_plot_cooksd_bar(mod.final, print_plot = TRUE)
-
-# Observation 168 appears to be a bit extreme and quite influential. What is 
-# special about #168?
-log(price[168])
-mod.final$fitted.values[168]
-
-#### Check if interactions are significant at alpha = 0.05 level (add one 
-# interaction at a time)
-mod.full <- lm(I(log(price)) ~ carwidth+ I(log(horsepower)) * carbody +
+## Check if interactions are significant at alpha = 0.05 level (add one 
+# interaction at a time). 
+mod.full.1 <- lm(I(log(price)) ~ carwidth+ I(log(horsepower)) * carbody +
                  drivewheel, data = cars)
-mod.red <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
+mod.red.1 <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
                 drivewheel, data = cars) 
 
 # Partial F-test on nested models
-anova(mod.red , mod.full)
+anova(mod.red.1 , mod.full.1)
 
 # The model with primary effects and the interaction between 
 # log(horsepower) and carbody is worth having over the reduced model according 
 # to F-test. 
 
-# Standardized and studentized residuals 
-ols_plot_resid_stand(mod.full, print_plot = TRUE)
-ols_plot_resid_stud(mod.full, print_plot = TRUE)
+# Plot the observed Y vs Y_hat.
+ols_plot_obs_fit(mod.full.1, print_plot = TRUE)
 
 # Compute Cook's distance and plot it to find influential observations
-ols_plot_cooksd_chart(mod.full, print_plot = TRUE)
+ols_plot_cooksd_chart(mod.full.1, print_plot = TRUE)
+ols_plot_cooksd_bar(mod.full.1, print_plot = TRUE)
+
+# Residuals
+ols_plot_resid_fit(mod.full.1, print_plot = TRUE)
+
+# Studentized residuals 
+ols_plot_resid_stud(mod.full.1, print_plot = TRUE)
+
+# Investigate observation 99
 log(price[99])
 mod.final$fitted.values[99]
+cars[99,]
 
-# However, the addition of interaction leads to observation 99 being an outlier
-# and very influential. So the conclusion is to not include the interaction term
+# Investigate observation 168
+log(price[168])
+mod.final$fitted.values[168]
+cars[168,]
 
+## Car 168 appears is an outlier comparing residuals and car 99 is a very
+# extreme observation according to Cooks distance. Try refitting without 
+# cars 99 and 168
+mod.full.2 <- lm(I(log(price)) ~ carwidth+ I(log(horsepower)) * carbody +
+                 drivewheel, data = cars, subset = c(-99,-168))
+mod.red.2 <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
+                drivewheel, data = cars, subset = c(-99,-168)) 
 
+# Partial F-test on nested models
+anova(mod.red.2, mod.full.2)
+
+# Plot the observed Y vs Y_hat.
+ols_plot_obs_fit(mod.full.2, print_plot = TRUE)
+
+# Compute Cook's distance and plot it to find influential observations
+ols_plot_cooksd_chart(mod.full.2, print_plot = TRUE)
+ols_plot_cooksd_bar(mod.full.2, print_plot = TRUE)
+
+# After removing car 168, the previously highly influential car 99 is no longer 
+# remarkable.
+
+# Residuals
+ols_plot_resid_fit(mod.full.2, print_plot = TRUE)
+
+# Studentized residuals 
+ols_plot_resid_stud(mod.full.2, print_plot = TRUE)
+
+### Let the final model be the mod.full.2 (log(price) ~carwidth + 
+# log(horsepower) * carbody + drivewheel, without observation 99 and 168)
+mod.final <- lm(I(log(price)) ~ carwidth+ I(log(horsepower)) * carbody +
+                  drivewheel, data = cars, subset = c(-99,-168))
+
+# What are the coefficients and their interpretation?
+summary(mod.final)
+# 
+# # Cook's distance
+# p.c <- cooks.distance(mod.final)
+# 
+# cars.subset <- cars[c(-99,-168),] 
+# 
+# # Plot the Cook's distance
+# plot(p.c,
+#      xlab = "Observation i", 
+#      ylab = "D",
+#      main = "Cook's distance for Final Model",
+#      sub = "log(price) ~ carwidth + log(horsepower) + carbody + drivewheel + log(horsepower) * carbody",
+#      cex = 1,
+#      cex.lab = 1.3,
+#      cex.main = 1.5,
+#      pch=21,
+#      bg = 1)
+# 
+# # Confidence intervals of coefficients. Plot CI for model.
+# 
+# cars[127,]
 
 
 
