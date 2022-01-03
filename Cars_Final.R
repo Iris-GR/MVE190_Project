@@ -302,6 +302,9 @@ summary(mod.1a.result)
 mod.final <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
                   drivewheel, data = cars)
 
+# Check so that log(horsepower) and carwidth are not linearly correlated
+vif(lm(I(log(price)) ~ carwidth + I(log(horsepower)) , data = cars))
+
 # What are the coefficients and their interpretation?
 summary(mod.final)
 
@@ -355,9 +358,6 @@ mod.final$fitted.values[99]
 
 # However, the addition of interaction leads to observation 99 being an outlier
 # and very influential. So the conclusion is to not include the interaction term
-
-
-
 
 
 
