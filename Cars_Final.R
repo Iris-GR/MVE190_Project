@@ -228,7 +228,7 @@ mod.0 <- lm(I(log(price)) ~ symboling + carwidth + carheight + enginesize +
               enginetype + cylindernumber + fuelsystem, data = cars)
 
 ## Ols backward search based on akaike criterion 
-mod.0b <- ols_step_backward_aic(mod.1)
+mod.0b <- ols_step_backward_aic(mod.0)
 mod.0b
 grDevices::windows()
 plot(mod.0b)
@@ -237,7 +237,7 @@ plot(mod.0b)
 mod.0c <- ols_step_forward_aic(mod.0)
 mod.0c
 grDevices::windows()
-plot(mod.1c)
+plot(mod.0c)
 
 ## Ols backward search based on p-value criterion 
 mod.0d <- ols_step_backward_p(mod.0)
@@ -269,15 +269,55 @@ mod.1a
 grDevices::windows()
 plot(mod.1a)
 
+# Akaike model selection
+plot(mod.1a$aic ~ mod.1a$n,
+     xlab = "Complexity", 
+     ylab = "AIC",
+     main = "Akaike Model Selection",
+     cex = 0.7,
+     cex.lab = 1.3,
+     cex.main = 1.5,)
+text(x = c(4),
+     y = c(-98.5),
+     labels= c("Model 473"),
+     pos = 1)
+symbols(x = c(4),
+       y = c(-101),
+       circles = 0.13,
+       add = T, 
+       inches = F, 
+       lwd = 2,
+       fg = "red3")
+
+# Mallow's model selection
+plot(mod.1a$cp ~ mod.1a$n,
+     xlab = "Complexity", 
+     ylab = "Mallow's Cp",
+     main = "Mallow's Cp Model Selection",
+     cex = 0.7,
+     cex.lab = 1.3,
+     cex.main = 1.5,)
+text(x = c(4),
+     y = c(52),
+     labels= c("Model 470"),
+     pos = 1)
+symbols(x = c(4),
+        y = c(50.40848),
+        circles = 0.13,
+        add = T, 
+        inches = F, 
+        lwd = 2,
+        fg = "red3")
+
 # We took best model with four covariates, mod #470 or # 473 appear
-# to be best
+# to be good
 
 # nr 470: carwidth, I(log(horsepower)), carbody and fuelsystem. Lower Mallows Cp
-# (50.40848), higher aic (-98.43165)
+# (50.40848), higher aic (-98.43165), similar R^2 (0.8676765)
 mod.1a[470,] 
 
 # nr 473: carwidth, I(log(horsepower)), carbody and drivewheel. Lower aic 
-# (-100.3443), higher Mallows Cp (60.28348)
+# (-100.3443), higher Mallows Cp (60.28348), similar R^2 (0.8658633)
 mod.1a[473,] 
 
 # Choose model nr 473
@@ -288,11 +328,12 @@ summary(mod.1a.result)
 #### Predicting “unseen observations” (Test and training data) #################
 
 # First do k-fold cross validation to find models. The function regsubset from 
-# the leaps package can not handle several categorical covariates at one and 
+# the leaps package can not handle several categorical covariates at once and 
 # furthermore not either categorical covariates with with more than a few levels.
 # For example "fuelsystem" can not be run. Test models with all numeric 
 # variables that are not strongly correlated with each other and then carbody,
-# and "drivewheel", as "cylindernumber" and "fuelsystem" were not possible.
+# and "drivewheel" included , as "cylindernumber" and "fuelsystem" were not 
+# possible.
 
 m <- lm(I(log(price)) ~ symboling + carwidth + carheight + enginesize + 
           boreratio + stroke + compressionratio + I(log(horsepower)) + 
@@ -403,26 +444,29 @@ PE <- apply(Pred.errors, 1, sum) / n
 
 # Rearrange the PE values according to increasing model complexity (does not 
 # really work, to many levels in the categorical covariates)
-Models
-complexity <- c(rep(2,11),
-                rep(3,55),
-                rep(4,165),
-                rep(5,330),
-                rep(6,462),
-                rep(7,462),
-                rep(8,330),
-                rep(9,165),
-                rep(10,55), 
-                rep(111,11),
-                12)
+# Models
+# complexity <- c(rep(2,11),
+#                 rep(3,55),
+#                 rep(4,165),
+#                 rep(5,330),
+#                 rep(6,462),
+#                 rep(7,462),
+#                 rep(8,330),
+#                 rep(9,165),
+#                 rep(10,55), 
+#                 rep(111,11),
+#                 12)
+# 
+# # Plot the complexity vs the prediction error (Note, not right complexity!)
+# grDevices::windows()
+# plot(complexity,PE) 
 
-# Plot the complexity vs the prediction error (Note, not right complexity!)
-grDevices::windows()
-plot(complexity,PE) 
-
-# The prediction error for the chosen model:
-# log(price) ~ carwidth + log(horsepower) + carbody + drivewheel
+# Find smallest prediction error for model with four covariates (says 2 here 
+# bacuse it has problems counting categorical covariates)
 PE[complexity == 2]
+
+# Model 11, which is log(price) ~ carwidth + log(horsepower) + carbody + 
+# drivewheel, has smallest rediction error among models with four covariates.
 Models[11,] 
 
 # The chosen model
@@ -431,13 +475,13 @@ chosen.mod <- lm(y[itrain] ~ X[itrain, Models[11, -1] == T])
 # Parameter estimates from chosen enmodel on training data
 beta.chosen <- chosen.mod$coefficients  
 
-# Select the variables active in chosen model from the test data
+# Select the variables present in chosen model from the test data
 design.chosen <- X[itest, Models[11, -1] == T]
 
 # Insert a column (ones) for the intercept
 design.chosen <- cbind(rep(1, dim(design.chosen)[1]), design.chosen)
 
-# obtain predictions using the covariates from the (last) test set 
+# Obtain predictions using the covariates from the (last) test set 
 ypred <- design.chosen %*% beta.chosen
 
 # Compare predictions with test responses
@@ -445,9 +489,9 @@ grDevices::windows()
 plot(y[itest], 
      ypred,
      xlab = "Y test", 
-     ylab = "Y prdiction",
+     ylab = "Y prediction",
      main = "Predicted Response VS Test Response",
-     sub = "",
+     sub = "log(price) ~ carwidth + log(horsepower) + carbody + drivewheel",
      cex = 1.2,
      cex.lab = 1.3,
      cex.main = 1.5,
@@ -484,7 +528,37 @@ ols_plot_obs_fit(mod.full.1, print_plot = TRUE)
 
 # Compute Cook's distance and plot it to find influential observations
 ols_plot_cooksd_chart(mod.full.1, print_plot = TRUE)
-ols_plot_cooksd_bar(mod.full.1, print_plot = TRUE)
+C.D.full.1 <- cooks.distance(mod.full.1)
+
+# Plot the Cook's distance
+plot(C.D.full.1,
+     xaxt='n',
+     xlab = "Observation i", 
+     ylab = "D",
+     main = "Cook's Distance",
+     #sub = "log(price) ~ carwidth + log(horsepower) + carbody + drivewheel + log(horsepower) * carbody",
+     cex = 0.7,
+     cex.lab = 1.3,
+     cex.main = 1.5,
+     pch=21,
+     bg = 1)
+axis(1, at = seq(0, 205, by = 20), las = 1)
+text(x = c(99),
+     y = c(1.86),
+     labels= c("ID 99, Nissan Clipper"),
+     pos = 4)
+# symbols(x = c(99),
+#         y = c(1.865),
+#         circles = 2,
+#         add = T, 
+#         inches = F, 
+#         lwd = 2,
+#         fg = "red3")
+
+# Investigate car 99
+log(price[99])
+mod.full.1$fitted.values[99]
+cars[99,]
 
 # Residuals
 ols_plot_resid_fit(mod.full.1, print_plot = TRUE)
@@ -492,23 +566,63 @@ ols_plot_resid_fit(mod.full.1, print_plot = TRUE)
 # Studentized residuals 
 ols_plot_resid_stud(mod.full.1, print_plot = TRUE)
 
-# Investigate observation 99
-log(price[99])
-mod.final$fitted.values[99]
-cars[99,]
+stud.res.full.1 <- studres(mod.full.1)
 
-# Investigate observation 168
-log(price[168])
-mod.final$fitted.values[168]
-cars[168,]
+# Significance level
+alpha <- 0.05
 
-## Car 168 appears is an outlier comparing residuals and car 99 is a very
+# Number of observations
+n.full.1 <- length(cars[,1])
+
+# Significance level corrected for number of observations
+alpha.cor.full.1 <- alpha / n.full.1
+
+# Find the cut-offs for the studentized residuals using the quantile function
+z.full.1 <- qnorm(alpha.cor.full.1 / 2)
+
+plot(stud.res.full.1,
+     ylim = c(-4.5, 4.5),
+     xaxt='n',
+     xlab = "Observation i", 
+     ylab = expression("r"[i]),
+     main = "Studentized Residuals",
+     #sub = "log(price) ~ carwidth + log(horsepower) + carbody + drivewheel + log(horsepower) * carbody",
+     cex = 0.7,
+     cex.lab = 1.3,
+     cex.main = 1.5,
+     pch=21,
+     bg = 1)
+axis(1, at = seq(0, 205, by = 20), las = 1)
+abline(h = 0,
+       lwd = 2)
+abline(h = -z.full.1,
+       col = "red3",
+       lwd = 2)
+abline(h = z.full.1, 
+       col = "red3",
+       lwd = 2)
+text(x = c(190),
+     y = c(-4),
+     expression("-z"[alpha]*""["/(2n)"]),
+     cex = 1.3,
+     col = "red3")
+text(x = c(190),
+     y = c(4),
+     expression("z"[alpha]*""["/(2n)"]),
+     cex = 1.3,
+     col = "red3")
+text(x = c(99),
+     y = c(4.3),
+     labels= c("ID 99, Nissan Clipper"),
+     pos = 4)
+
+## Car 99 appears is an outlier comparing residuals and car 99 is a very
 # extreme observation according to Cooks distance. Try refitting without 
 # cars 99 and 168
 mod.full.2 <- lm(I(log(price)) ~ carwidth+ I(log(horsepower)) * carbody +
-                 drivewheel, data = cars, subset = c(-99,-168))
+                 drivewheel, data = cars, subset = c(-99))
 mod.red.2 <- lm(I(log(price)) ~ carwidth + I(log(horsepower)) + carbody + 
-                drivewheel, data = cars, subset = c(-99,-168)) 
+                drivewheel, data = cars, subset = c(-99)) 
 
 # Partial F-test on nested models
 anova(mod.red.2, mod.full.2)
@@ -520,9 +634,6 @@ ols_plot_obs_fit(mod.full.2, print_plot = TRUE)
 ols_plot_cooksd_chart(mod.full.2, print_plot = TRUE)
 ols_plot_cooksd_bar(mod.full.2, print_plot = TRUE)
 
-# After removing car 168, the previously highly influential car 99 is no longer 
-# remarkable.
-
 # Residuals
 ols_plot_resid_fit(mod.full.2, print_plot = TRUE)
 
@@ -530,44 +641,105 @@ ols_plot_resid_fit(mod.full.2, print_plot = TRUE)
 ols_plot_resid_stud(mod.full.2, print_plot = TRUE)
 
 ### Let the final model be the mod.full.2 (log(price) ~carwidth + 
-# log(horsepower) * carbody + drivewheel, without observation 99 and 168)
-mod.final <- lm(I(log(price)) ~ carwidth+ I(log(horsepower)) * carbody +
-                  drivewheel, data = cars, subset = c(-99,-168))
+# log(horsepower) * carbody + drivewheel, without car 99 )
+mod.final <- lm(I(log(price)) ~ carwidth + drivewheel + I(log(horsepower)) * 
+                  carbody, data = cars, subset = c(-99))
 
 # What are the coefficients and their interpretation?
 summary(mod.final)
-# 
-# # Cook's distance
-# p.c <- cooks.distance(mod.final)
-# 
-# cars.subset <- cars[c(-99,-168),] 
-# 
-# # Plot the Cook's distance
-# plot(p.c,
-#      xlab = "Observation i", 
-#      ylab = "D",
-#      main = "Cook's distance for Final Model",
-#      sub = "log(price) ~ carwidth + log(horsepower) + carbody + drivewheel + log(horsepower) * carbody",
-#      cex = 1,
-#      cex.lab = 1.3,
-#      cex.main = 1.5,
-#      pch=21,
-#      bg = 1)
-# 
-# # Confidence intervals of coefficients. Plot CI for model.
-# 
-# cars[127,]
 
+# 95% confidence interval
+confint(mod.final, level = 0.95)
 
+# Cook's distance
+C.D.final <- cooks.distance(mod.final)
 
+# Plot the Cook's distance
+plot(C.D.final,
+     xaxt='n',
+    xlab = "Observation i", 
+    ylab = "D",
+    main = "Cook's Distance for Final Model",
+    #sub = "(Car ID 99 excluded)",
+    cex = 0.7,
+    cex.lab = 1.3,
+    cex.main = 1.5,
+    pch=21,
+    bg = 1)
+axis(1, at = seq(0, 205, by = 20), las = 1)
+text(x = c(70,  129),
+     y = c(0.167, 0.41),
+     labels= c("ID 70, Buick Century", 
+               "ID 129, Porsche Boxter"),
+     pos = 1)
 
+# Residuals
+ols_plot_resid_fit(mod.final, print_plot = TRUE)
 
+# Studentized residuals 
+ols_plot_resid_stud(mod.final, print_plot = TRUE)
+stud.res.final <- studres(mod.final)
 
+# Significance level
+alpha <- 0.05
 
+# Subset the cars dataset
+cars.subset <- cars[c(-99),] 
 
+# Number of observations
+n.final <- length(cars.subset[,1])
 
+# Significance level corrected for number of observations
+alpha.cor.final <- alpha / n.final
 
+# Find the cut-offs for the studentized residuals using the quantile function
+z.final <- qnorm(alpha.cor.final / 2)
 
+plot(stud.res.final,
+     ylim = c(-4.5, 4.5),
+     xaxt='n',
+     xlab = "Observation i", 
+     ylab = expression("r"[i]),
+     main = "Studentized Residuals for Final Model",
+     #sub = "log(price) ~ carwidth + log(horsepower) + carbody + drivewheel + log(horsepower) * carbody",
+     cex = 0.7,
+     cex.lab = 1.3,
+     cex.main = 1.5,
+     pch=21,
+     bg = 1)
+axis(1, at = seq(0, 205, by = 20), las = 1)
+abline(h = 0,
+       lwd = 2)
+abline(h = -z.final,
+       col = "red3",
+       lwd = 2)
+abline(h = z.final, 
+       col = "red3",
+       lwd = 2)
+text(x = c(190),
+     y = c(-4),
+     expression("-z"[alpha]*""["/(2n)"]),
+     cex = 1.3,
+     col = "red3")
+text(x = c(190),
+     y = c(4),
+     expression("z"[alpha]*""["/(2n)"]),
+     cex = 1.3,
+     col = "red3")
+
+# Plot the observed Y vs Y_hat.
+ols_plot_obs_fit(mod.final, print_plot = TRUE)
+
+plot(mod.final$fitted.values ~ I(log(cars.subset$price)),
+     xlab = "Observed log(price)",
+     ylab = "Fitted log(price)",
+     main = "Observed VS Fitted Response for Final Model",
+     cex = 0.8,
+     cex.lab = 1.3,
+     cex.main = 1.5,
+     pch=21,
+     bg = 1)
+abline(0, 1, lwd = 1.5)
 
 
 
