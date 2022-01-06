@@ -273,6 +273,21 @@ abline(h = -z,
 abline(h = z, 
        col = "red3",
        lwd = 2)
+text(x = c(32),
+     y = c(-4),
+     expression("-z"[alpha]*""["/(2n)"]),
+     cex = 1.3,
+     col = "red3")
+text(x = c(32),
+     y = c(4),
+     expression("z"[alpha]*""["/(2n)"]),
+     cex = 1.3,
+     col = "red3")
+text(x = c(28, 29),
+     y = c(4.7, 3.7),
+     cex = 1.3,
+     labels = c("Inverness", "Ross"),
+     pos = 2)
 
 # Cook's distance
 p.c.d <- cooks.distance(p.model)
@@ -465,7 +480,7 @@ plot(nb.pearsons.r.std,
      xlab = "Observation i", 
      ylab = expression(r[i]), 
      ylim = c(-5, 5),
-     main = "Std. Pearson Residuals for Negative Binomial Model 1",
+     main = "Std. Pearson Residuals for Negative Binomial Model",
      sub = "apprentices ~ urbanization + log(population) + log(distance)",
      cex = 1.3,
      cex.lab = 1.3,
@@ -480,6 +495,16 @@ abline(h = -z,
 abline(h = z, 
        col = "red3",
        lwd = 2)
+text(x = c(32),
+     y = c(-4),
+     expression("-z"[alpha]*""["/(2n)"]),
+     cex = 1.3,
+     col = "red3")
+text(x = c(32),
+     y = c(4),
+     expression("z"[alpha]*""["/(2n)"]),
+     cex = 1.3,
+     col = "red3")
 
 # Cook's distance
 nb.c.d <- cooks.distance(nb.model)
