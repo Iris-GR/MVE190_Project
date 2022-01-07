@@ -1,7 +1,6 @@
-# Hopefully the final cars script
+# Cars dataset script
 
 # Set working directory (set your own)
-setwd("~/MVE190_Data_Management/git_folder_mve190_project/MVE190_Project")
 
 #### Load libraries ############################################################
 library(corrplot)

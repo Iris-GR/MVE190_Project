@@ -1,4 +1,7 @@
-setwd("~/Linear statistical models/mini-presentations/presentation_3")
+
+
+# Set working directory
+
 
 #------------------ Libraries -------------------------------------------------#
 #Here are all the libraries used (or potentially not used) presented.
