@@ -535,7 +535,6 @@ plot(C.D.full.1,
      xlab = "Observation i", 
      ylab = "D",
      main = "Cook's Distance",
-     #sub = "log(price) ~ carwidth + log(horsepower) + carbody + drivewheel + log(horsepower) * carbody",
      cex = 0.7,
      cex.lab = 1.3,
      cex.main = 1.5,
@@ -576,8 +575,8 @@ n.full.1 <- length(cars[,1])
 # Significance level corrected for number of observations
 alpha.cor.full.1 <- alpha / n.full.1
 
-# Find the cut-offs for the studentized residuals using the quantile function
-z.full.1 <- qnorm(alpha.cor.full.1 / 2)
+# Find the cut-offs for the studentized residual outliers
+t.full.1 = qt(alpha.cor.full.1/2, n.full.1-1-6)
 
 plot(stud.res.full.1,
      ylim = c(-4.5, 4.5),
@@ -592,26 +591,27 @@ plot(stud.res.full.1,
      pch=21,
      bg = 1)
 axis(1, at = seq(0, 205, by = 20), las = 1)
+
 abline(h = 0,
        lwd = 2)
-abline(h = -z.full.1,
+abline(h = -t.full.1,
        col = "red3",
        lwd = 2)
-abline(h = z.full.1, 
+abline(h = t.full.1, 
        col = "red3",
        lwd = 2)
 text(x = c(190),
-     y = c(-4),
-     expression("-z"[alpha]*""["/(2n)"]),
+     y = c(-4.2),
+     expression("t"[alpha]*""["/(2n), n-1-p"]),
      cex = 1.3,
      col = "red3")
 text(x = c(190),
-     y = c(4),
-     expression("z"[alpha]*""["/(2n)"]),
+     y = c(4.2),
+     expression("t"[alpha]*""["/(2n), n-1-p"]),
      cex = 1.3,
      col = "red3")
 text(x = c(99),
-     y = c(4.3),
+     y = c(4.4),
      labels= c("ID 99, Nissan Clipper"),
      pos = 4)
 
@@ -691,8 +691,8 @@ n.final <- length(cars.subset[,1])
 # Significance level corrected for number of observations
 alpha.cor.final <- alpha / n.final
 
-# Find the cut-offs for the studentized residuals using the quantile function
-z.final <- qnorm(alpha.cor.final / 2)
+# Find the cut-offs for the studentized residuals
+t.final = qt(alpha.cor.final / 2, n.final - 1 - 6)
 
 plot(stud.res.final,
      ylim = c(-4.5, 4.5),
@@ -709,20 +709,20 @@ plot(stud.res.final,
 axis(1, at = seq(0, 205, by = 20), las = 1)
 abline(h = 0,
        lwd = 2)
-abline(h = -z.final,
+abline(h = -t.final,
        col = "red3",
        lwd = 2)
-abline(h = z.final, 
+abline(h = t.final, 
        col = "red3",
        lwd = 2)
 text(x = c(190),
-     y = c(-4),
-     expression("-z"[alpha]*""["/(2n)"]),
+     y = c(-4.2),
+     expression("t"[alpha]*""["/(2n), n-1-p"]),
      cex = 1.3,
      col = "red3")
 text(x = c(190),
-     y = c(4),
-     expression("z"[alpha]*""["/(2n)"]),
+     y = c(4.2),
+     expression("t"[alpha]*""["/(2n), n-1-p"]),
      cex = 1.3,
      col = "red3")
 
