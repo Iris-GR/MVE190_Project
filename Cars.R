@@ -270,7 +270,7 @@ plot(mod.1a)
 
 # Akaike model selection
 plot(mod.1a$aic ~ mod.1a$n,
-     xlab = "Complexity", 
+     xlab = "Nr. Covariates", 
      ylab = "AIC",
      main = "Akaike Model Selection",
      cex = 0.7,
@@ -290,7 +290,7 @@ symbols(x = c(4),
 
 # Mallow's model selection
 plot(mod.1a$cp ~ mod.1a$n,
-     xlab = "Complexity", 
+     xlab = "Nr. Covariates", 
      ylab = "Mallow's Cp",
      main = "Mallow's Cp Model Selection",
      cex = 0.7,
@@ -700,7 +700,6 @@ plot(stud.res.final,
      xlab = "Observation i", 
      ylab = expression("r"[i]),
      main = "Studentized Residuals for Final Model",
-     #sub = "log(price) ~ carwidth + log(horsepower) + carbody + drivewheel + log(horsepower) * carbody",
      cex = 0.7,
      cex.lab = 1.3,
      cex.main = 1.5,
